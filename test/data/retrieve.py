@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# This script follows the tutorial at
+# https://scanpy.readthedocs.io/en/stable/tutorials/basics/clustering.html
+
 # Core scverse libraries
 import scanpy as sc
 import anndata as ad
