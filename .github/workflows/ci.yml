@@ -29,7 +29,7 @@ jobs:
         run: uv sync
 
       - name: Run tests
-        run: NO_COLOR=1 uv run pytest
+        run: uv run pytest
 
   lint:
     name: Lint
