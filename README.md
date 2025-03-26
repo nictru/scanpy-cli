@@ -20,6 +20,19 @@ Commands for preprocessing single-cell data:
 scanpy-cli pp normalize  # Normalize data
 scanpy-cli pp filter_cells  # Filter cells
 scanpy-cli pp filter_genes  # Filter genes
+scanpy-cli pp regress_out KEYS --input-file INPUT.h5ad --output-file OUTPUT.h5ad  # Regress out unwanted variation
+```
+
+Example of regress_out:
+```bash
+# Regress out cell cycle effects using S_score and G2M_score
+scanpy-cli pp regress_out S_score,G2M_score -i data.h5ad -o data_regressed.h5ad
+
+# Regress out with specified parameters
+scanpy-cli pp regress_out percent_mito -l counts -j 4 -i data.h5ad -o data_regressed.h5ad
+
+# You can use either long or short parameter names
+scanpy-cli pp regress_out percent_mito --layer counts --n-jobs 4 --input-file data.h5ad --output-file data_regressed.h5ad
 ```
 
 ### Tools (tl)
@@ -50,4 +63,5 @@ For help on any command, use the `--help` flag:
 scanpy-cli --help
 scanpy-cli pp --help
 scanpy-cli tl pca --help
+scanpy-cli pp regress_out --help
 ```
