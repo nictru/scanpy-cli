@@ -35,7 +35,35 @@ import sys
 )
 @click.option(
     "--metric",
-    type=str,
+    type=click.Choice(
+        [
+            # Standard metrics
+            "cityblock",
+            "cosine",
+            "euclidean",
+            "l1",
+            "l2",
+            "manhattan",
+            # Additional metrics
+            "braycurtis",
+            "canberra",
+            "chebyshev",
+            "correlation",
+            "dice",
+            "hamming",
+            "jaccard",
+            "kulsinski",
+            "mahalanobis",
+            "minkowski",
+            "rogerstanimoto",
+            "russellrao",
+            "seuclidean",
+            "sokalmichener",
+            "sokalsneath",
+            "sqeuclidean",
+            "yule",
+        ]
+    ),
     default="euclidean",
     help="Distance metric to use (default: euclidean).",
 )
