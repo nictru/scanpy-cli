@@ -1,7 +1,6 @@
 import pytest
 import scanpy as sc
 import subprocess
-import os
 import shutil
 from pathlib import Path
 

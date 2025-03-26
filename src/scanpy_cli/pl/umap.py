@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 
+
 @click.command()
 @click.option(
     "--input-file",
@@ -222,7 +223,9 @@ def umap(
         try:
             dimensions = [int(x) for x in dimensions.split(",")]
         except ValueError:
-            raise ValueError("--dimensions should be comma-separated integers, e.g., '0,1'")
+            raise ValueError(
+                "--dimensions should be comma-separated integers, e.g., '0,1'"
+            )
 
         # Process outline colors
         if outline_color:
