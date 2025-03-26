@@ -18,11 +18,6 @@ import matplotlib.pyplot as plt
     help="Output file to save the plot. Supported formats: pdf, png, svg.",
 )
 @click.option(
-    "--basis",
-    default="umap",
-    help="Basis to use for the plot (default: 'umap').",
-)
-@click.option(
     "--color",
     multiple=True,
     help="Keys for annotations of observations/cells or variables/genes. Can be specified multiple times.",
@@ -182,7 +177,6 @@ import matplotlib.pyplot as plt
 def umap(
     input_file,
     output_file,
-    basis,
     color,
     gene_symbols,
     use_raw,
@@ -273,7 +267,6 @@ def umap(
             gene_symbols=gene_symbols,
             use_raw=use_raw,
             layer=layer,
-            basis=basis,
             dims=dims,
             projection=projection,
             legend_loc=legend_loc,

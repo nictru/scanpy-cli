@@ -104,6 +104,32 @@ scanpy-cli pl umap -i data_umap.h5ad -o umap_colored.png --color leiden --color 
 scanpy-cli pl umap -i data_umap.h5ad -o umap_custom.png --color leiden --dpi 300 --figsize 8,6 --add-outline
 ```
 
+## Development
+
+### Running Tests
+
+To run the tests, you'll need to install the package with the test dependencies:
+
+```bash
+# Install in development mode with test dependencies
+pip install -e ".[testing]"
+
+# Run the tests with pytest
+pytest
+```
+
+If you're using `hatch`, you can run the tests with:
+
+```bash
+# Run all tests
+hatch run test:test
+
+# Run with coverage
+hatch run test:test-cov
+```
+
+The tests use a small test dataset that's automatically generated the first time the tests are run.
+
 ## Getting Help
 
 For help on any command, use the `--help` flag:

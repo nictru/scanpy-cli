@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Testing
+.pytest_cache/
+tests/data/test.h5ad
