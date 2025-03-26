@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
     help="Layer to use for plotting.",
 )
 @click.option(
-    "--dims",
+    "--dimensions",
     default="0,1",
     help="Dimensions to plot (comma-separated, e.g., '0,1'). Zero-indexed.",
 )
@@ -181,7 +181,7 @@ def umap(
     gene_symbols,
     use_raw,
     layer,
-    dims,
+    dimensions,
     projection,
     legend_loc,
     legend_fontsize,
@@ -218,11 +218,11 @@ def umap(
         # Load the AnnData object
         adata = sc.read_h5ad(input_file)
 
-        # Process dims
+        # Process dimensions
         try:
-            dims = [int(x) for x in dims.split(",")]
+            dimensions = [int(x) for x in dimensions.split(",")]
         except ValueError:
-            raise ValueError("--dims should be comma-separated integers, e.g., '0,1'")
+            raise ValueError("--dimensions should be comma-separated integers, e.g., '0,1'")
 
         # Process outline colors
         if outline_color:
@@ -267,7 +267,7 @@ def umap(
             gene_symbols=gene_symbols,
             use_raw=use_raw,
             layer=layer,
-            dims=dims,
+            dimensions=dimensions,
             projection=projection,
             legend_loc=legend_loc,
             legend_fontsize=legend_fontsize,

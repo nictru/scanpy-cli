@@ -35,7 +35,7 @@ def test_pp_subcommand():
     assert "Commands:" in output
     assert "pca" in output
     assert "neighbors" in output
-    assert "regress_out" in output
+    assert "regress-out" in output
 
 
 def test_tl_subcommand():

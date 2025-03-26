@@ -12,3 +12,4 @@ wheels/
 # Testing
 .pytest_cache/
 tests/data/test.h5ad
+data
