@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 from scanpy_cli.pp.regress_out import regress_out
 from scanpy_cli.pp.neighbors import neighbors
 from scanpy_cli.pp.pca import pca

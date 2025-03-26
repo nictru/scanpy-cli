@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 
 from scanpy_cli.pl.umap import umap
 

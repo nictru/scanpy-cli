@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 from scanpy_cli.pp import pp
 from scanpy_cli.tl import tl
 from scanpy_cli.pl import pl
