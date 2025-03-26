@@ -1,6 +1,5 @@
 import click
 
-from scanpy_cli.tl.pca import pca
 from scanpy_cli.tl.umap import umap
 from scanpy_cli.tl.leiden import leiden
 
@@ -11,6 +10,5 @@ def tl():
     pass
 
 
-tl.add_command(pca)
 tl.add_command(umap)
 tl.add_command(leiden)
