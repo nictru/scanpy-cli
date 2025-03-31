@@ -1,4 +1,5 @@
 import subprocess
+import importlib.metadata
 
 
 def test_cli_launches():
@@ -18,6 +19,23 @@ def test_cli_launches():
     assert "pp" in result.stdout
     assert "tl" in result.stdout
     assert "pl" in result.stdout
+
+
+def test_version():
+    """Test that the --version parameter works correctly."""
+    cmd = ["scanpy-cli", "--version"]
+
+    # Run the command
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    # Check that the command was successful
+    assert result.returncode == 0, f"Version command failed: {result.stderr}"
+
+    # Get the expected version from package metadata
+    expected_version = importlib.metadata.version("scanpy-cli")
+
+    # Check that the output contains the correct version
+    assert f"scanpy-cli, version {expected_version}" in result.stdout
 
 
 def test_pp_subcommand():
