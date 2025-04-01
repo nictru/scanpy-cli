@@ -1,35 +1,19 @@
-import pytest
 import scanpy as sc
 import subprocess
 
 
-@pytest.fixture
-def clustered_h5ad_path(test_h5ad_path, temp_h5ad_file):
-    """Create a temporary h5ad file with clustering for rank_genes_groups."""
-    # Read the test data
-    adata = sc.read_h5ad(test_h5ad_path)
-
-    # Compute clustering
-    sc.tl.leiden(adata, flavor="igraph", n_iterations=2)
-
-    # Write to temporary file
-    adata.write_h5ad(temp_h5ad_file)
-
-    return temp_h5ad_file
-
-
-def test_rank_genes_groups_runs(clustered_h5ad_path, temp_h5ad_file):
+def test_rank_genes_groups_runs(test_h5ad_path, temp_h5ad_file):
     """Test that the rank_genes_groups command runs successfully."""
     cmd = [
         "scanpy-cli",
         "tl",
         "rank-genes-groups",
         "--input-file",
-        str(clustered_h5ad_path),
+        str(test_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--groupby",
-        "leiden",
+        "louvain",
     ]
 
     # Run the command

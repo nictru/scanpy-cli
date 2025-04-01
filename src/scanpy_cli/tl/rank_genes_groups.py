@@ -13,11 +13,13 @@ import sys
 @click.option(
     "--groups",
     type=str,
+    default="all",
     help="Subset of groups, e.g. ['g1', 'g2', 'g3'], to which comparison shall be restricted, or 'all' for all groups.",
 )
 @click.option(
     "--reference",
     type=str,
+    default="rest",
     help="If 'rest', compare each group to the union of the rest of the group. If a group identifier, compare with respect to this group.",
 )
 @click.option(
@@ -39,7 +41,6 @@ import sys
 @click.option(
     "--method",
     type=click.Choice(["logreg", "t-test", "wilcoxon", "t-test_overestim_var"]),
-    default="t-test",
     help="The default method is 't-test'.",
 )
 @click.option(
@@ -111,6 +112,7 @@ def rank_genes_groups(
     - adata.uns['rank_genes_groups']['pvals']: P-values for each gene
     - adata.uns['rank_genes_groups']['pvals_adj']: Adjusted p-values for each gene
     - adata.uns['rank_genes_groups']['pts']: Fraction of cells expressing the genes (if pts=True)
+    - adata.uns['rank_genes_groups']['pts_rest']: Fraction of cells from the rest expressing the genes (if reference='rest')
     """
     try:
         # Load the AnnData object
