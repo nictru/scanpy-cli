@@ -6,7 +6,7 @@ def test_scrublet_runs(test_h5ad_path, temp_h5ad_file):
     """Test that the scrublet command runs successfully."""
     cmd = [
         "scanpy-cli",
-        "tl",
+        "pp",
         "scrublet",
         "--input-file",
         str(test_h5ad_path),

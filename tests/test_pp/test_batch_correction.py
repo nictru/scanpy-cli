@@ -6,7 +6,7 @@ def test_harmony_runs(batch_h5ad_path, temp_h5ad_file):
     """Test that the harmony command runs successfully."""
     cmd = [
         "scanpy-cli",
-        "tl",
+        "pp",
         "harmony",
         "--input-file",
         str(batch_h5ad_path),
@@ -38,7 +38,7 @@ def test_combat_runs(batch_h5ad_path, temp_h5ad_file):
     """Test that the combat command runs successfully."""
     cmd = [
         "scanpy-cli",
-        "tl",
+        "pp",
         "combat",
         "--input-file",
         str(batch_h5ad_path),

@@ -2,6 +2,10 @@ import rich_click as click
 from scanpy_cli.pp.regress_out import regress_out
 from scanpy_cli.pp.neighbors import neighbors
 from scanpy_cli.pp.pca import pca
+from scanpy_cli.pp.highly_variable_genes import highly_variable_genes
+from scanpy_cli.pp.harmony import harmony
+from scanpy_cli.pp.combat import combat
+from scanpy_cli.pp.scrublet import scrublet
 
 
 @click.group()
@@ -10,6 +14,10 @@ def pp():
     pass
 
 
+pp.add_command(scrublet)
+pp.add_command(combat)
+pp.add_command(harmony)
+pp.add_command(highly_variable_genes)
 pp.add_command(regress_out)
 pp.add_command(neighbors)
 pp.add_command(pca)

@@ -22,7 +22,7 @@ def test_highly_variable_genes_runs(normalized_h5ad_path, temp_h5ad_file):
     result = subprocess.run(
         [
             "scanpy-cli",
-            "tl",
+            "pp",
             "highly-variable-genes",
             "-i",
             normalized_h5ad_path,
@@ -49,7 +49,7 @@ def test_highly_variable_genes_with_batch_runs(batch_h5ad_path, temp_h5ad_file):
     result = subprocess.run(
         [
             "scanpy-cli",
-            "tl",
+            "pp",
             "highly-variable-genes",
             "-i",
             batch_h5ad_path,
