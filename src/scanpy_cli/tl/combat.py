@@ -1,6 +1,5 @@
 import rich_click as click
 import scanpy as sc
-import scanpy.external as sce
 import sys
 
 
@@ -8,18 +7,25 @@ import sys
 @click.option(
     "--key",
     type=str,
-    required=True,
-    help="Key in adata.obs of the batch annotation to correct over.",
-)
-@click.option(
-    "--layer",
-    type=str,
-    help="If provided, which element of layers to correct.",
+    default="batch",
+    help="Key to a categorical annotation from obs that will be used for batch effect removal.",
 )
 @click.option(
     "--covariates",
     type=str,
-    help="Additional covariates to adjust for. Can be a comma-separated list of keys in adata.obs.",
+    help="Additional covariates besides the batch variable such as adjustment variables or biological condition. Can be a comma-separated list of keys in adata.obs.",
+)
+@click.option(
+    "--in-layer",
+    type=str,
+    default="X",
+    help="Layer to use as input data. If 'X', uses the main data matrix. Otherwise uses the specified layer.",
+)
+@click.option(
+    "--out-layer",
+    type=str,
+    default="X",
+    help="Layer to store the corrected data in. If 'X', updates the main data matrix. Otherwise stores in layers.",
 )
 @click.option(
     "--input-file",
@@ -35,37 +41,57 @@ import sys
 )
 def combat(
     key,
-    layer,
     covariates,
+    in_layer,
+    out_layer,
     input_file,
     output_file,
 ):
-    """Run ComBat batch correction [Johnson et al., 2007].
+    """Run ComBat batch correction [Johnson et al., 2006, Leek et al., 2017, Pedersen, 2012].
 
-    ComBat is a method for adjusting for batch effects in microarray-based
-    expression studies. It uses an empirical Bayes framework to adjust for
-    location and scale batch effects.
+    Corrects for batch effects by fitting linear models, gains statistical power via an EB framework
+    where information is borrowed across genes. This uses the implementation combat.py [Pedersen, 2012].
 
-    Results are stored in the AnnData object:
-    - adata.layers['combat']: Batch-corrected data matrix
+    Parameters
+    ----------
+    key : str
+        Key to a categorical annotation from obs that will be used for batch effect removal.
+    covariates : str, optional
+        Additional covariates besides the batch variable such as adjustment variables or biological condition.
+        Can be a comma-separated list of keys in adata.obs. This parameter refers to the design matrix X in
+        Equation 2.1 in Johnson et al. [2006] and to the mod argument in the original combat function in the sva R package.
+        Note that not including covariates may introduce bias or lead to the removal of biological signal in unbalanced designs.
+    in_layer : str
+        Layer to use as input data. If 'X', uses the main data matrix. Otherwise uses the specified layer.
+    out_layer : str
+        Layer to store the corrected data in. If 'X', updates the main data matrix. Otherwise stores in layers.
     """
     try:
         # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+
+        # Store original X if needed
+        original_x = None
+        if in_layer != "X":
+            original_x = adata.X.copy()
+            adata.X = adata.layers[in_layer]
 
         # Process covariates if provided
         covariates_list = None
         if covariates:
             covariates_list = covariates.split(",")
 
-        # Call scanpy's external combat function
-        sce.pp.combat(
-            adata,
-            key=key,
-            layer=layer,
-            covariates=covariates_list,
-            inplace=True,  # Always True for CLI usage
+        # Call scanpy's combat function
+        corrected = sc.pp.combat(
+            adata, key=key, covariates=covariates_list, inplace=False
         )
+
+        if out_layer == "X":
+            adata.X = corrected
+        else:
+            adata.layers[out_layer] = corrected
+            if in_layer != "X":
+                adata.X = original_x
 
         # Save the result
         adata.write(output_file)

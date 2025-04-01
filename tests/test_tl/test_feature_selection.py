@@ -1,0 +1,49 @@
+import pytest
+import scanpy as sc
+import subprocess
+
+
+@pytest.fixture
+def normalized_h5ad_path(test_h5ad_path, temp_h5ad_file):
+    """Create a temporary h5ad file with normalized data for HVG."""
+    # Read the test data
+    adata = sc.read_h5ad(test_h5ad_path)
+
+    # Basic preprocessing
+    sc.pp.calculate_qc_metrics(adata, inplace=True)
+    sc.pp.filter_cells(adata, min_genes=200)
+    sc.pp.filter_genes(adata, min_cells=3)
+    sc.pp.normalize_total(adata)
+    sc.pp.log1p(adata)
+    sc.pp.scale(adata)
+
+    # Write to temporary file
+    adata.write_h5ad(temp_h5ad_file)
+
+    return temp_h5ad_file
+
+
+def test_hvg_runs(normalized_h5ad_path, temp_h5ad_file):
+    """Test that the hvg command runs successfully."""
+    cmd = [
+        "scanpy-cli",
+        "tl",
+        "hvg",
+        "--input-file",
+        str(normalized_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+    ]
+
+    # Run the command
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    # Check that the command was successful
+    assert result.returncode == 0, f"HVG command failed: {result.stderr}"
+
+    # Check that the output file exists
+    assert temp_h5ad_file.exists(), "Output file was not created"
+
+    # Check that the output file is a valid AnnData object with HVG results
+    adata = sc.read_h5ad(temp_h5ad_file)
+    assert "highly_variable" in adata.var, "HVG results not found in var"

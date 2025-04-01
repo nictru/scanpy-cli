@@ -3,7 +3,7 @@ import scanpy as sc
 import sys
 
 
-@click.command()
+@click.command(name="rank-genes-groups")
 @click.option(
     "--groupby",
     type=str,
@@ -28,8 +28,8 @@ import sys
 @click.option(
     "--use-raw",
     type=bool,
-    default=False,
-    help="Use raw attribute of adata if present (default: False).",
+    default=None,
+    help="Use raw attribute of adata if present (default: None).",
 )
 @click.option(
     "--layer",
@@ -39,14 +39,37 @@ import sys
 @click.option(
     "--method",
     type=click.Choice(["logreg", "t-test", "wilcoxon", "t-test_overestim_var"]),
-    default="wilcoxon",
-    help="The default method is 'wilcoxon'.",
+    default="t-test",
+    help="The default method is 't-test'.",
 )
 @click.option(
     "--corr-method",
     type=click.Choice(["benjamini-hochberg", "bonferroni"]),
     default="benjamini-hochberg",
     help="Correction method for multiple testing (default: 'benjamini-hochberg').",
+)
+@click.option(
+    "--mask-var",
+    type=str,
+    help="Select subset of genes to use in statistical tests (default: None).",
+)
+@click.option(
+    "--rankby-abs",
+    type=bool,
+    default=False,
+    help="Rank genes by the absolute value of the score, not by the score (default: False).",
+)
+@click.option(
+    "--pts",
+    type=bool,
+    default=False,
+    help="Compute the fraction of cells expressing the genes (default: False).",
+)
+@click.option(
+    "--tie-correct",
+    type=bool,
+    default=False,
+    help="Use tie correction for 'wilcoxon' scores (default: False).",
 )
 @click.option(
     "--input-file",
@@ -69,6 +92,10 @@ def rank_genes_groups(
     layer,
     method,
     corr_method,
+    mask_var,
+    rankby_abs,
+    pts,
+    tie_correct,
     input_file,
     output_file,
 ):
@@ -83,6 +110,7 @@ def rank_genes_groups(
     - adata.uns['rank_genes_groups']['scores']: Scores for each gene
     - adata.uns['rank_genes_groups']['pvals']: P-values for each gene
     - adata.uns['rank_genes_groups']['pvals_adj']: Adjusted p-values for each gene
+    - adata.uns['rank_genes_groups']['pts']: Fraction of cells expressing the genes (if pts=True)
     """
     try:
         # Load the AnnData object
@@ -99,6 +127,10 @@ def rank_genes_groups(
             layer=layer,
             method=method,
             corr_method=corr_method,
+            mask_var=mask_var,
+            rankby_abs=rankby_abs,
+            pts=pts,
+            tie_correct=tie_correct,
         )
 
         # Save the result

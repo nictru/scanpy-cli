@@ -25,8 +25,6 @@ def test_h5ad_path(test_data_dir):
 
         # If the test.h5ad file doesn't exist, create a small test AnnData object
         adata = sc.datasets.pbmc3k_processed()
-        # Take a small subset for faster testing
-        adata = adata[:100, :100].copy()
         # Save the test data
         adata.write_h5ad(path)
 

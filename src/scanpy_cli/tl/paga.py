@@ -28,16 +28,6 @@ import sys
     help="Key in adata.uns for neighbors (default: 'neighbors').",
 )
 @click.option(
-    "--connectivities-key",
-    type=str,
-    help="Key in adata.obsp for connectivities (default: None).",
-)
-@click.option(
-    "--distances-key",
-    type=str,
-    help="Key in adata.obsp for distances (default: None).",
-)
-@click.option(
     "--input-file",
     "-i",
     required=True,
@@ -54,8 +44,6 @@ def paga(
     use_rna_velocity,
     model,
     neighbors_key,
-    connectivities_key,
-    distances_key,
     input_file,
     output_file,
 ):
@@ -84,8 +72,6 @@ def paga(
             use_rna_velocity=use_rna_velocity,
             model=model,
             neighbors_key=neighbors_key,
-            connectivities_key=connectivities_key,
-            distances_key=distances_key,
         )
 
         # Save the result
