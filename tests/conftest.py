@@ -33,6 +33,33 @@ def test_h5ad_path(test_data_dir):
 
 
 @pytest.fixture
+def raw_h5ad_path(temp_h5ad_file):
+    """Create a temporary h5ad file with raw count data for Scrublet."""
+    # Create a fresh AnnData object from pbmc3k
+    adata = sc.datasets.pbmc3k()
+
+    # Write to temporary file
+    adata.write_h5ad(temp_h5ad_file)
+
+    return temp_h5ad_file
+
+
+@pytest.fixture
+def raw_log_h5ad_path(temp_h5ad_file):
+    """Create a temporary h5ad file with log-normalized raw data for HVG."""
+    # Create a fresh AnnData object from pbmc3k
+    adata = sc.datasets.pbmc3k()
+
+    # Log normalize the data
+    sc.pp.log1p(adata)
+
+    # Write to temporary file
+    adata.write_h5ad(temp_h5ad_file)
+
+    return temp_h5ad_file
+
+
+@pytest.fixture
 def batch_h5ad_path(test_h5ad_path, temp_h5ad_file):
     """Create a temporary h5ad file with batch information for batch correction."""
     # Read the test data

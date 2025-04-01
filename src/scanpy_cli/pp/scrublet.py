@@ -8,25 +8,25 @@ import sys
     "--expected-doublet-rate",
     type=float,
     default=0.05,
-    help="Expected doublet rate for the experiment (default: 0.05).",
+    help="Where adata_sim not supplied, the estimated doublet rate for the experiment.",
 )
 @click.option(
     "--stdev-doublet-rate",
     type=float,
     default=0.02,
-    help="Uncertainty in the expected doublet rate (default: 0.02).",
+    help="Where adata_sim not supplied, uncertainty in the expected doublet rate.",
 )
 @click.option(
     "--sim-doublet-ratio",
     type=float,
     default=2.0,
-    help="Number of doublets to simulate relative to the number of observed transcriptomes (default: 2.0).",
+    help="Number of doublets to simulate relative to the number of observed transcriptomes.",
 )
 @click.option(
     "--synthetic-doublet-umi-subsampling",
     type=float,
     default=1.0,
-    help="Rate for sampling UMIs when creating synthetic doublets (default: 1.0).",
+    help="Where adata_sim not supplied, rate for sampling UMIs when creating synthetic doublets. If 1.0, each doublet is created by simply adding the UMI counts from two randomly sampled observed transcriptomes. For values less than 1, the UMI counts are added and then randomly sampled at the specified rate.",
 )
 @click.option(
     "--knn-dist-metric",
@@ -58,53 +58,53 @@ import sys
         ]
     ),
     default="euclidean",
-    help="Distance metric used when finding nearest neighbors (default: 'euclidean').",
+    help="Distance metric used when finding nearest neighbors. For list of valid values, see the documentation for annoy (if use_approx_neighbors is True) or sklearn.neighbors.NearestNeighbors (if use_approx_neighbors is False).",
 )
 @click.option(
     "--normalize-variance",
     is_flag=True,
     default=True,
-    help="Normalize the data such that each gene has a variance of 1 (default: True).",
+    help="If True, normalize the data such that each gene has a variance of 1. sklearn.decomposition.TruncatedSVD will be used for dimensionality reduction, unless mean_center is True.",
 )
 @click.option(
     "--log-transform",
     is_flag=True,
     default=False,
-    help="Use log1p() to log-transform the data prior to PCA (default: False).",
+    help="Whether to use log1p() to log-transform the data prior to PCA.",
 )
 @click.option(
     "--mean-center",
     is_flag=True,
     default=True,
-    help="Center the data such that each gene has a mean of 0 (default: True).",
+    help="If True, center the data such that each gene has a mean of 0. sklearn.decomposition.PCA will be used for dimensionality reduction.",
 )
 @click.option(
     "--n-prin-comps",
     type=int,
     default=30,
-    help="Number of principal components used to embed the transcriptomes (default: 30).",
+    help="Number of principal components used to embed the transcriptomes prior to k-nearest-neighbor graph construction.",
 )
 @click.option(
     "--use-approx-neighbors",
     is_flag=True,
-    default=False,
-    help="Use approximate nearest neighbor method (annoy) for the KNN classifier (default: False).",
+    default=None,
+    help="Use approximate nearest neighbor method (annoy) for the KNN classifier.",
 )
 @click.option(
     "--get-doublet-neighbor-parents",
     is_flag=True,
     default=False,
-    help="Return the parent transcriptomes that generated the doublet neighbors (default: False).",
+    help="If True, return (in .uns) the parent transcriptomes that generated the doublet neighbors of each observed transcriptome. This information can be used to infer the cell states that generated a given doublet state.",
 )
 @click.option(
     "--n-neighbors",
     type=int,
-    help="Number of neighbors used to construct the KNN graph. If None, automatically set to round(0.5 * sqrt(n_obs)).",
+    help="Number of neighbors used to construct the KNN graph of observed transcriptomes and simulated doublets. If None, this is automatically set to np.round(0.5 * np.sqrt(n_obs)).",
 )
 @click.option(
     "--threshold",
     type=float,
-    help="Doublet score threshold for calling a transcriptome a doublet. If None, automatically determined.",
+    help="Doublet score threshold for calling a transcriptome a doublet. If None, this is set automatically by looking for the minimum between the two modes of the doublet_scores_sim_ histogram. It is best practice to check the threshold visually using the doublet_scores_sim_ histogram and/or based on co-localization of predicted doublets in a 2-D embedding.",
 )
 @click.option(
     "--batch-key",
@@ -115,7 +115,7 @@ import sys
     "--random-state",
     type=int,
     default=0,
-    help="Random seed for doublet simulation and nearest neighbors (default: 0).",
+    help="Initial state for doublet simulation and nearest neighbors.",
 )
 @click.option(
     "--input-file",
@@ -148,11 +148,11 @@ def scrublet(
     input_file,
     output_file,
 ):
-    """Run Scrublet doublet detection [Wolock et al., 2019].
+    """Predict doublets using Scrublet [Wolock et al., 2019].
 
-    Scrublet is a method for identifying doublets in single-cell RNA-seq data.
-    It works by simulating artificial doublets and comparing their expression
-    profiles to those of real cells.
+    Predict cell doublets using a nearest-neighbor classifier of observed transcriptomes and simulated doublets.
+    Works best if the input is a raw (unnormalized) counts matrix from a single sample or a collection of similar
+    samples from the same experiment.
 
     Results are stored in the AnnData object:
     - adata.obs['doublet_score']: Doublet scores for each observed transcriptome

@@ -2,14 +2,14 @@ import scanpy as sc
 import subprocess
 
 
-def test_scrublet_runs(test_h5ad_path, temp_h5ad_file):
+def test_scrublet_runs(raw_h5ad_path, temp_h5ad_file):
     """Test that the scrublet command runs successfully."""
     cmd = [
         "scanpy-cli",
         "pp",
         "scrublet",
         "--input-file",
-        str(test_h5ad_path),
+        str(raw_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
     ]
@@ -25,5 +25,5 @@ def test_scrublet_runs(test_h5ad_path, temp_h5ad_file):
 
     # Check that the output file is a valid AnnData object with Scrublet results
     adata = sc.read_h5ad(temp_h5ad_file)
-    assert "scrublet_scores" in adata.obs, "Scrublet scores not found in obs"
-    assert "predicted_doublets" in adata.obs, "Predicted doublets not found in obs"
+    assert "doublet_score" in adata.obs, "Doublet scores not found in obs"
+    assert "predicted_doublet" in adata.obs, "Predicted doublets not found in obs"

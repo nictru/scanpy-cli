@@ -1,23 +1,8 @@
-import pytest
 import scanpy as sc
 import subprocess
 
 
-@pytest.fixture
-def normalized_h5ad_path(temp_h5ad_file):
-    """Create a temporary h5ad file with normalized data for HVG."""
-    # Create a fresh AnnData object from pbmc3k
-    adata = sc.datasets.pbmc3k()
-
-    sc.pp.log1p(adata)
-
-    # Write to temporary file
-    adata.write_h5ad(temp_h5ad_file)
-
-    return temp_h5ad_file
-
-
-def test_highly_variable_genes_runs(normalized_h5ad_path, temp_h5ad_file):
+def test_highly_variable_genes_runs(raw_log_h5ad_path, temp_h5ad_file):
     """Test that the highly_variable_genes command runs successfully without batch correction."""
     result = subprocess.run(
         [
@@ -25,7 +10,7 @@ def test_highly_variable_genes_runs(normalized_h5ad_path, temp_h5ad_file):
             "pp",
             "highly-variable-genes",
             "-i",
-            normalized_h5ad_path,
+            raw_log_h5ad_path,
             "-o",
             temp_h5ad_file,
         ],
