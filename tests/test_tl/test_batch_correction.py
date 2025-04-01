@@ -1,26 +1,5 @@
-import pytest
 import scanpy as sc
 import subprocess
-import numpy as np
-
-
-@pytest.fixture
-def batch_h5ad_path(test_h5ad_path, temp_h5ad_file):
-    """Create a temporary h5ad file with batch information for batch correction."""
-    # Read the test data
-    adata = sc.read_h5ad(test_h5ad_path)
-
-    # Set random seed for reproducibility
-    np.random.seed(42)
-
-    # Create batch column with two categories
-    n_cells = adata.n_obs
-    adata.obs["batch"] = np.random.choice(["batch1", "batch2"], size=n_cells)
-
-    # Write to temporary file
-    adata.write_h5ad(temp_h5ad_file)
-
-    return temp_h5ad_file
 
 
 def test_harmony_runs(batch_h5ad_path, temp_h5ad_file):

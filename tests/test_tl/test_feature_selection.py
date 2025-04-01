@@ -4,18 +4,12 @@ import subprocess
 
 
 @pytest.fixture
-def normalized_h5ad_path(test_h5ad_path, temp_h5ad_file):
+def normalized_h5ad_path(temp_h5ad_file):
     """Create a temporary h5ad file with normalized data for HVG."""
-    # Read the test data
-    adata = sc.read_h5ad(test_h5ad_path)
+    # Create a fresh AnnData object from pbmc3k
+    adata = sc.datasets.pbmc3k()
 
-    # Basic preprocessing
-    sc.pp.calculate_qc_metrics(adata, inplace=True)
-    sc.pp.filter_cells(adata, min_genes=200)
-    sc.pp.filter_genes(adata, min_cells=3)
-    sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
-    sc.pp.scale(adata)
 
     # Write to temporary file
     adata.write_h5ad(temp_h5ad_file)
@@ -23,20 +17,21 @@ def normalized_h5ad_path(test_h5ad_path, temp_h5ad_file):
     return temp_h5ad_file
 
 
-def test_hvg_runs(normalized_h5ad_path, temp_h5ad_file):
-    """Test that the hvg command runs successfully."""
-    cmd = [
-        "scanpy-cli",
-        "tl",
-        "hvg",
-        "--input-file",
-        str(normalized_h5ad_path),
-        "--output-file",
-        str(temp_h5ad_file),
-    ]
-
-    # Run the command
-    result = subprocess.run(cmd, capture_output=True, text=True)
+def test_highly_variable_genes_runs(normalized_h5ad_path, temp_h5ad_file):
+    """Test that the highly_variable_genes command runs successfully without batch correction."""
+    result = subprocess.run(
+        [
+            "scanpy-cli",
+            "tl",
+            "highly-variable-genes",
+            "-i",
+            normalized_h5ad_path,
+            "-o",
+            temp_h5ad_file,
+        ],
+        capture_output=True,
+        text=True,
+    )
 
     # Check that the command was successful
     assert result.returncode == 0, f"HVG command failed: {result.stderr}"
@@ -47,3 +42,40 @@ def test_hvg_runs(normalized_h5ad_path, temp_h5ad_file):
     # Check that the output file is a valid AnnData object with HVG results
     adata = sc.read_h5ad(temp_h5ad_file)
     assert "highly_variable" in adata.var, "HVG results not found in var"
+
+
+def test_highly_variable_genes_with_batch_runs(batch_h5ad_path, temp_h5ad_file):
+    """Test that the highly_variable_genes command runs successfully with batch correction."""
+    result = subprocess.run(
+        [
+            "scanpy-cli",
+            "tl",
+            "highly-variable-genes",
+            "-i",
+            batch_h5ad_path,
+            "-o",
+            temp_h5ad_file,
+            "--batch-key",
+            "batch",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    # Check that the command was successful
+    assert (
+        result.returncode == 0
+    ), f"HVG command with batch correction failed: {result.stderr}"
+
+    # Check that the output file exists
+    assert temp_h5ad_file.exists(), "Output file was not created"
+
+    # Check that the output file is a valid AnnData object with HVG results
+    adata = sc.read_h5ad(temp_h5ad_file)
+    assert "highly_variable" in adata.var, "HVG results not found in var"
+    assert (
+        "highly_variable_nbatches" in adata.var
+    ), "Batch-specific HVG results not found in var"
+    assert (
+        "highly_variable_intersection" in adata.var
+    ), "Intersection HVG results not found in var"
