@@ -1,7 +1,7 @@
 [project]
 name = "scanpy-cli"
-version = "0.1.6"
-description = "Add your description here"
+version = "0.1.7"
+description = "CLI for the scanpy package"
 readme = "README.md"
 authors = [
     { name = "nictru", email = "nictru32@gmail.com" }
