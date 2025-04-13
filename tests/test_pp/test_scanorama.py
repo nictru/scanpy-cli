@@ -29,36 +29,14 @@ def contiguous_batch_h5ad_path(batch_h5ad_path):
         tmp_path.unlink()
 
 
-@pytest.fixture
-def pca_h5ad_path(contiguous_batch_h5ad_path):
-    """Create a temporary h5ad file with PCA computed."""
-    with tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-
-    # Load the data
-    adata = sc.read_h5ad(contiguous_batch_h5ad_path)
-
-    # Compute PCA
-    sc.pp.pca(adata)
-
-    # Save the prepared data
-    adata.write_h5ad(tmp_path)
-
-    yield tmp_path
-
-    # Cleanup after test
-    if tmp_path.exists():
-        tmp_path.unlink()
-
-
-def test_scanorama_runs(pca_h5ad_path, temp_h5ad_file):
+def test_scanorama_runs(contiguous_batch_h5ad_path, temp_h5ad_file):
     """Test that the scanorama command runs successfully."""
     cmd = [
         "scanpy-cli",
         "pp",
         "scanorama",
         "--input-file",
-        str(pca_h5ad_path),
+        str(contiguous_batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--key",
@@ -83,14 +61,14 @@ def test_scanorama_runs(pca_h5ad_path, temp_h5ad_file):
     assert "X_scanorama" in adata.obsm, "Scanorama results not found in obsm"
 
 
-def test_scanorama_custom_parameters(pca_h5ad_path, temp_h5ad_file):
+def test_scanorama_custom_parameters(contiguous_batch_h5ad_path, temp_h5ad_file):
     """Test Scanorama with custom parameters."""
     cmd = [
         "scanpy-cli",
         "pp",
         "scanorama",
         "--input-file",
-        str(pca_h5ad_path),
+        str(contiguous_batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--key",
@@ -124,7 +102,7 @@ def test_scanorama_custom_parameters(pca_h5ad_path, temp_h5ad_file):
     assert "X_scanorama" in adata.obsm, "Scanorama results not found in obsm"
 
 
-def test_scanorama_pickle_output(pca_h5ad_path, temp_h5ad_file, tmp_path):
+def test_scanorama_pickle_output(contiguous_batch_h5ad_path, temp_h5ad_file, tmp_path):
     """Test that the scanorama command saves the embedding as a pickle file when requested."""
     # Create a temporary pickle file path
     pickle_path = tmp_path / "scanorama_embedding.pkl"
@@ -134,7 +112,7 @@ def test_scanorama_pickle_output(pca_h5ad_path, temp_h5ad_file, tmp_path):
         "pp",
         "scanorama",
         "--input-file",
-        str(pca_h5ad_path),
+        str(contiguous_batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--key",
@@ -168,7 +146,7 @@ def test_scanorama_pickle_output(pca_h5ad_path, temp_h5ad_file, tmp_path):
     ), "Pickle file embedding does not match AnnData embedding"
 
 
-def test_scanorama_error_handling(pca_h5ad_path, temp_h5ad_file):
+def test_scanorama_error_handling(contiguous_batch_h5ad_path, temp_h5ad_file):
     """Test Scanorama error handling with invalid parameters."""
     # Test with invalid key
     cmd = [
@@ -176,7 +154,7 @@ def test_scanorama_error_handling(pca_h5ad_path, temp_h5ad_file):
         "pp",
         "scanorama",
         "--input-file",
-        str(pca_h5ad_path),
+        str(contiguous_batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--key",
@@ -197,7 +175,7 @@ def test_scanorama_error_handling(pca_h5ad_path, temp_h5ad_file):
         "pp",
         "scanorama",
         "--input-file",
-        str(pca_h5ad_path),
+        str(contiguous_batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--key",
