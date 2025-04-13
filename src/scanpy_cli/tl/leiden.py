@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import pickle
 
 
 @click.command()
@@ -77,6 +78,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--clusters-output",
+    type=str,
+    help="Optional path to save the cluster assignments as a pickle file.",
+)
 def leiden(
     resolution,
     random_state,
@@ -91,6 +97,7 @@ def leiden(
     restrict_to_categories,
     input_file,
     output_file,
+    clusters_output,
 ):
     """Cluster cells into subgroups [Traag et al., 2019].
 
@@ -135,10 +142,17 @@ def leiden(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(
             f"Successfully computed Leiden clustering with resolution {resolution} and saved to {output_file}"
         )
+
+        # Save cluster assignments as pickle if specified
+        if clusters_output:
+            clusters = adata.obs[[key_added]]
+            with open(clusters_output, "wb") as f:
+                pickle.dump(clusters, f)
+            click.echo(f"Successfully saved cluster assignments to {clusters_output}")
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
