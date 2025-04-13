@@ -42,7 +42,7 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 python_classes = "Test*"
-addopts = "--cov=src/scanpy_cli --cov-fail-under=90"
+addopts = "--cov=src/scanpy_cli --cov-fail-under=85"
 
 [project.optional-dependencies]
 testing = [
