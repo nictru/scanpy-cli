@@ -2,6 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import numpy as np
+import pickle
 
 
 @click.command()
@@ -89,6 +90,11 @@ import numpy as np
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--hvg-output",
+    type=str,
+    help="Optional path to save the highly variable genes information as a pickle file.",
+)
 def highly_variable_genes(
     n_top_genes,
     min_mean,
@@ -105,6 +111,7 @@ def highly_variable_genes(
     check_values,
     input_file,
     output_file,
+    hvg_output,
 ):
     """Annotate highly variable genes [Satija et al., 2015, Stuart et al., 2019, Zheng et al., 2017].
 
@@ -145,6 +152,15 @@ def highly_variable_genes(
 
         # Save the result
         adata.write(output_file)
+
+        # Save highly variable genes information as pickle if specified
+        if hvg_output:
+            hvg_info = adata.var[["highly_variable"]]
+            with open(hvg_output, "wb") as f:
+                pickle.dump(hvg_info, f)
+            click.echo(
+                f"Successfully saved highly variable genes information to {hvg_output}"
+            )
 
         click.echo(
             f"Successfully detected highly variable genes and saved to {output_file}"

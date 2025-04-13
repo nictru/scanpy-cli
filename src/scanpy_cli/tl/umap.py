@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import pickle
 
 
 @click.command()
@@ -96,6 +97,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--embedding-output",
+    type=str,
+    help="Optional path to save the UMAP embedding as a pickle file.",
+)
 def umap(
     min_dist,
     spread,
@@ -113,6 +119,7 @@ def umap(
     neighbors_key,
     input_file,
     output_file,
+    embedding_output,
 ):
     """Embed the neighborhood graph using UMAP [McInnes et al., 2018].
 
@@ -151,8 +158,16 @@ def umap(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(f"Successfully computed UMAP embedding and saved to {output_file}")
+
+        # Save embedding as pickle if specified
+        if embedding_output:
+            embedding_key = key_added if key_added else "X_umap"
+            embedding = adata.obsm[embedding_key]
+            with open(embedding_output, "wb") as f:
+                pickle.dump(embedding, f)
+            click.echo(f"Successfully saved UMAP embedding to {embedding_output}")
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
