@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import numpy as np
 
 
 @click.command()
@@ -23,7 +24,12 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
-def regress_out(keys, layer, n_jobs, input_file, output_file):
+@click.option(
+    "--regressed-output",
+    type=click.Path(exists=False),
+    help="Optional path to save the regressed data as a numpy file.",
+)
+def regress_out(keys, layer, n_jobs, input_file, output_file, regressed_output):
     """Regress out (mostly) unwanted sources of variation.
 
     Uses simple linear regression. This is inspired by Seurat's regressOut function in R.
@@ -43,10 +49,15 @@ def regress_out(keys, layer, n_jobs, input_file, output_file):
 
         # Save the result
         adata.write(output_file)
-
         click.echo(
             f"Successfully regressed out {keys} from data and saved to {output_file}"
         )
+
+        # Save regressed data as numpy file if specified
+        if regressed_output:
+            np.save(regressed_output, adata.layers[layer] if layer else adata.X)
+            click.echo(f"Successfully saved regressed data to {regressed_output}")
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
