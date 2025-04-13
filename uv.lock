@@ -252,6 +252,12 @@ wheels = [
 ]
 
 [[package]]
+name = "fbpca"
+version = "1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/a5/2085d0645a4bb4f0b606251b0b7466c61326e4a471d445c1c3761a2d07bc/fbpca-1.0.tar.gz", hash = "sha256:150677642479663f317fdbb5e06dab3f98721cf7031bb4a84113d7a631c472d1", size = 11758 }
+
+[[package]]
 name = "filelock"
 version = "3.18.0"
 source = { registry = "https://pypi.org/simple" }
@@ -283,6 +289,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ea/e0/46f9600c39c644b54e4420f941f75fa200d9288c9ae171e5d80918b8cbb9/fonttools-4.56.0-cp313-cp313-win32.whl", hash = "sha256:d0cb73ccf7f6d7ca8d0bc7ea8ac0a5b84969a41c56ac3ac3422a24df2680546f", size = 2140927 },
     { url = "https://files.pythonhosted.org/packages/27/6d/3edda54f98a550a0473f032d8050315fbc8f1b76a0d9f3879b72ebb2cdd6/fonttools-4.56.0-cp313-cp313-win_amd64.whl", hash = "sha256:62cc1253827d1e500fde9dbe981219fea4eb000fd63402283472d38e7d8aa1c6", size = 2186709 },
     { url = "https://files.pythonhosted.org/packages/bf/ff/44934a031ce5a39125415eb405b9efb76fe7f9586b75291d66ae5cbfc4e6/fonttools-4.56.0-py3-none-any.whl", hash = "sha256:1088182f68c303b50ca4dc0c82d42083d176cba37af1937e1a976a31149d4d14", size = 1089800 },
+]
+
+[[package]]
+name = "geosketch"
+version = "1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fbpca" },
+    { name = "numpy" },
+    { name = "scikit-learn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/83/be440da764a468bdd2467ce0f74d1a20191be0f25e1ad6ab00e27594ff4e/geosketch-1.3.tar.gz", hash = "sha256:2b2a6056c2134048fa85972ee93b95bdf53555fdf482cc4bfc29c485b78bb5f4", size = 8731 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/af/5159cc0d7de2260985a78bf973279647d6f58156e7ed2b74f66b5006a925/geosketch-1.3-py3-none-any.whl", hash = "sha256:b820d4d2fa727cc8f3a2cface7169f752a4a809e0930ca277fd987328b439c7e", size = 8148 },
 ]
 
 [[package]]
@@ -381,6 +401,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/f2/97/ebf4da567aa6827c9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e1/e6716421ea10d38022b952c159d5161ca1193197fb744506875fbb87ea7b/iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760", size = 6050 },
 ]
+
+[[package]]
+name = "intervaltree"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sortedcontainers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/fb/396d568039d21344639db96d940d40eb62befe704ef849b27949ded5c3bb/intervaltree-3.1.0.tar.gz", hash = "sha256:902b1b88936918f9b2a19e0e5eb7ccb430ae45cde4f39ea4b36932920d33952d", size = 32861 }
 
 [[package]]
 name = "joblib"
@@ -964,6 +993,25 @@ wheels = [
 ]
 
 [[package]]
+name = "scanorama"
+version = "1.7.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annoy" },
+    { name = "fbpca" },
+    { name = "geosketch" },
+    { name = "intervaltree" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1a/e1/9f96a38f2c036a3574540b57ea87f6106289c3999f9920610476baef6321/scanorama-1.7.4.tar.gz", hash = "sha256:67de100e63abc3028c7780d3a217e43e920a5781230bc6b6a51349d4605e005c", size = 36187 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/36/ec/4077eb780a026f40816d4d64444ed01596a8ee166be53e7995cd0162dc28/scanorama-1.7.4-py3-none-any.whl", hash = "sha256:b20c87e725a2ba42c318aefadcfc6ed08cf52ff5ae00f1c041072f8888c7a225", size = 12508 },
+]
+
+[[package]]
 name = "scanpy"
 version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1005,6 +1053,7 @@ dependencies = [
     { name = "igraph" },
     { name = "leidenalg" },
     { name = "rich-click" },
+    { name = "scanorama" },
     { name = "scanpy" },
     { name = "scikit-image" },
 ]
@@ -1033,6 +1082,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.3.5" },
     { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=5.0.0" },
     { name = "rich-click", specifier = ">=1.8.8" },
+    { name = "scanorama", specifier = ">=1.7.4" },
     { name = "scanpy", specifier = ">=1.11.0" },
     { name = "scikit-image", specifier = ">=0.25.2" },
 ]
@@ -1168,6 +1218,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050 },
+]
+
+[[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/c4/ba2f8066cceb6f23394729afe52f3bf7adec04bf9ed2c820b39e19299111/sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88", size = 30594 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/46/9cb0e58b2deb7f82b84065f37f3bffeb12413f947f9388e4cac22c4621ce/sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0", size = 29575 },
 ]
 
 [[package]]

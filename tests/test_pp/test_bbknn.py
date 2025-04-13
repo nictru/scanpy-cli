@@ -1,35 +1,15 @@
-import pytest
 import scanpy as sc
-from pathlib import Path
-import tempfile
 import subprocess
 
 
-@pytest.fixture
-def pca_h5ad_path(batch_h5ad_path):
-    """Create a temporary h5ad file with PCA computed."""
-    with tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-
-    adata = sc.read_h5ad(batch_h5ad_path)
-    sc.pp.pca(adata)
-    adata.write_h5ad(tmp_path)
-
-    yield tmp_path
-
-    # Cleanup after test
-    if tmp_path.exists():
-        tmp_path.unlink()
-
-
-def test_bbknn_runs(pca_h5ad_path, temp_h5ad_file):
+def test_bbknn_runs(batch_h5ad_path, temp_h5ad_file):
     """Test that the bbknn command runs successfully."""
     cmd = [
         "scanpy-cli",
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--batch-key",
@@ -52,14 +32,14 @@ def test_bbknn_runs(pca_h5ad_path, temp_h5ad_file):
     assert "neighbors" in adata.uns, "BBKNN neighbors not found in uns"
 
 
-def test_bbknn_custom_parameters(pca_h5ad_path, temp_h5ad_file):
+def test_bbknn_custom_parameters(batch_h5ad_path, temp_h5ad_file):
     """Test BBKNN with custom parameters."""
     cmd = [
         "scanpy-cli",
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--batch-key",
@@ -91,14 +71,14 @@ def test_bbknn_custom_parameters(pca_h5ad_path, temp_h5ad_file):
     assert "neighbors" in adata.uns, "BBKNN neighbors not found in uns"
 
 
-def test_bbknn_pynndescent(pca_h5ad_path, temp_h5ad_file):
+def test_bbknn_pynndescent(batch_h5ad_path, temp_h5ad_file):
     """Test BBKNN with PyNNDescent instead of Annoy."""
     cmd = [
         "scanpy-cli",
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--batch-key",
@@ -126,7 +106,7 @@ def test_bbknn_pynndescent(pca_h5ad_path, temp_h5ad_file):
     assert "neighbors" in adata.uns, "BBKNN neighbors not found in uns"
 
 
-def test_bbknn_error_handling(pca_h5ad_path, temp_h5ad_file):
+def test_bbknn_error_handling(batch_h5ad_path, temp_h5ad_file):
     """Test BBKNN error handling with invalid parameters."""
     # Test with invalid batch key
     cmd = [
@@ -134,7 +114,7 @@ def test_bbknn_error_handling(pca_h5ad_path, temp_h5ad_file):
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--batch-key",
@@ -151,7 +131,7 @@ def test_bbknn_error_handling(pca_h5ad_path, temp_h5ad_file):
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--use-rep",
@@ -163,14 +143,14 @@ def test_bbknn_error_handling(pca_h5ad_path, temp_h5ad_file):
     assert "Error" in result.stderr, "Error message not found in stderr"
 
 
-def test_bbknn_trim(pca_h5ad_path, temp_h5ad_file):
+def test_bbknn_trim(batch_h5ad_path, temp_h5ad_file):
     """Test BBKNN with trim parameter."""
     cmd = [
         "scanpy-cli",
         "pp",
         "bbknn",
         "--input-file",
-        str(pca_h5ad_path),
+        str(batch_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--batch-key",

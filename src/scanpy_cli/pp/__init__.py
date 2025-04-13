@@ -9,6 +9,7 @@ from scanpy_cli.pp.scrublet import scrublet
 from scanpy_cli.pp.filter_genes import filter_genes
 from scanpy_cli.pp.filter_cells import filter_cells
 from scanpy_cli.pp.bbknn import bbknn
+from scanpy_cli.pp.scanorama import scanorama
 
 
 @click.group()
@@ -27,3 +28,4 @@ pp.add_command(pca)
 pp.add_command(filter_genes)
 pp.add_command(filter_cells)
 pp.add_command(bbknn)
+pp.add_command(scanorama)
