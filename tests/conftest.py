@@ -79,6 +79,25 @@ def batch_h5ad_path(test_h5ad_path, temp_h5ad_file):
 
 
 @pytest.fixture
+def raw_batch_h5ad_path(temp_h5ad_file):
+    """Create a temporary h5ad file with raw count data and batch information for Scrublet."""
+    # Create a fresh AnnData object from pbmc3k
+    adata = sc.datasets.pbmc3k()
+
+    # Set random seed for reproducibility
+    np.random.seed(42)
+
+    # Create batch column with two categories
+    n_cells = adata.n_obs
+    adata.obs["batch"] = np.random.choice(["batch1", "batch2"], size=n_cells)
+
+    # Write to temporary file
+    adata.write_h5ad(temp_h5ad_file)
+
+    return temp_h5ad_file
+
+
+@pytest.fixture
 def temp_h5ad_file():
     """Create a temporary h5ad file for testing."""
     with tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False) as tmp:
