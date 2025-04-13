@@ -129,6 +129,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--doublet-output",
+    type=str,
+    help="Optional path to save doublet predictions and scores as a pickle file.",
+)
 def scrublet(
     expected_doublet_rate,
     stdev_doublet_rate,
@@ -147,6 +152,7 @@ def scrublet(
     random_state,
     input_file,
     output_file,
+    doublet_output,
 ):
     """Predict doublets using Scrublet [Wolock et al., 2019].
 
@@ -187,10 +193,22 @@ def scrublet(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(
             f"Successfully ran Scrublet doublet detection and saved to {output_file}"
         )
+
+        # Save doublet predictions and scores as pickle if specified
+        if doublet_output:
+            doublet_df = adata.obs[["predicted_doublet", "doublet_score"]].copy()
+            doublet_df.columns = [
+                "scrublet_predicted_doublet",
+                "scrublet_doublet_score",
+            ]
+            doublet_df.to_pickle(doublet_output)
+            click.echo(
+                f"Successfully saved doublet predictions and scores to {doublet_output}"
+            )
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
