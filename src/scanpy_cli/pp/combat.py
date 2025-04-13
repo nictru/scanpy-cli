@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import numpy as np
 
 
 @click.command()
@@ -39,6 +40,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--corrected-output",
+    type=str,
+    help="Optional path to save the batch-corrected data as a numpy file.",
+)
 def combat(
     key,
     covariates,
@@ -46,6 +52,7 @@ def combat(
     out_layer,
     input_file,
     output_file,
+    corrected_output,
 ):
     """Run ComBat batch correction [Johnson et al., 2006, Leek et al., 2017, Pedersen, 2012].
 
@@ -95,10 +102,14 @@ def combat(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(
             f"Successfully ran ComBat batch correction and saved to {output_file}"
         )
+
+        # Save corrected data as numpy file if specified
+        if corrected_output:
+            np.save(corrected_output, corrected)
+            click.echo(f"Successfully saved batch-corrected data to {corrected_output}")
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)

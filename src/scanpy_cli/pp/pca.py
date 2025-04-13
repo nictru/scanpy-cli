@@ -137,6 +137,7 @@ def pca(
 
         # Save the result
         adata.write(output_file)
+        click.echo(f"Successfully computed PCA and saved to {output_file}")
 
         # Save embedding as pickle if specified
         if embedding_output:
@@ -146,7 +147,6 @@ def pca(
                 pickle.dump(embedding, f)
             click.echo(f"Successfully saved PCA embedding to {embedding_output}")
 
-        click.echo(f"Successfully computed PCA and saved to {output_file}")
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
