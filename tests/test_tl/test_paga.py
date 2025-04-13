@@ -1,31 +1,15 @@
-import pytest
 import scanpy as sc
 import subprocess
 
 
-@pytest.fixture
-def processed_h5ad_path(test_h5ad_path, temp_h5ad_file):
-    """Create a temporary h5ad file with neighbors computed for PAGA."""
-    # Read the test data
-    adata = sc.read_h5ad(test_h5ad_path)
-
-    # Compute neighbors (required for PAGA)
-    sc.pp.neighbors(adata)
-
-    # Write to temporary file
-    adata.write_h5ad(temp_h5ad_file)
-
-    return temp_h5ad_file
-
-
-def test_paga_runs(processed_h5ad_path, temp_h5ad_file):
+def test_paga_runs(test_h5ad_path, temp_h5ad_file):
     """Test that the paga command runs successfully."""
     cmd = [
         "scanpy-cli",
         "tl",
         "paga",
         "--input-file",
-        str(processed_h5ad_path),
+        str(test_h5ad_path),
         "--output-file",
         str(temp_h5ad_file),
         "--neighbors-key",
