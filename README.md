@@ -25,6 +25,8 @@ Commands for preprocessing single-cell data:
 - `harmony`: Batch effect correction using Harmony
 - `scrublet`: Detect doublets in single-cell RNA-seq data
 - `highly_variable_genes`: Identify highly variable genes
+- `scanorama`: Run Scanorama for batch effect correction
+- `bbknn`: Run BBKNN for batch effect correction
 
 ### Tools (tl)
 
