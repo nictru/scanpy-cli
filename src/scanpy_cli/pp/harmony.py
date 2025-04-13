@@ -2,6 +2,7 @@ import rich_click as click
 import scanpy as sc
 import scanpy.external as sce
 import sys
+import pickle
 
 
 @click.command()
@@ -45,6 +46,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--embedding-output",
+    type=str,
+    help="Optional path to save the harmonized embedding as a pickle file.",
+)
 def harmony(
     key,
     basis,
@@ -53,6 +59,7 @@ def harmony(
     random_state,
     input_file,
     output_file,
+    embedding_output,
 ):
     """Run Harmony batch correction [Korsunsky et al., 2019].
 
@@ -79,8 +86,16 @@ def harmony(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(f"Successfully ran Harmony integration and saved to {output_file}")
+
+        # Save embedding as pickle if specified
+        if embedding_output:
+            embedding_key = adjusted_basis if adjusted_basis else f"{basis}_harmony"
+            embedding = adata.obsm[embedding_key]
+            with open(embedding_output, "wb") as f:
+                pickle.dump(embedding, f)
+            click.echo(f"Successfully saved harmonized embedding to {embedding_output}")
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
