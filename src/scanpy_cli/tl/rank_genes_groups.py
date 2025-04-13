@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import pickle
 
 
 @click.command(name="rank-genes-groups")
@@ -84,6 +85,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--rank-genes-output",
+    type=str,
+    help="Optional path to save rank_genes_groups dictionary as a pickle file.",
+)
 def rank_genes_groups(
     groupby,
     groups,
@@ -99,6 +105,7 @@ def rank_genes_groups(
     tie_correct,
     input_file,
     output_file,
+    rank_genes_output,
 ):
     """Rank genes for characterizing groups.
 
@@ -137,8 +144,16 @@ def rank_genes_groups(
 
         # Save the result
         adata.write(output_file)
-
         click.echo(f"Successfully ran rank_genes_groups and saved to {output_file}")
+
+        # Save rank_genes_groups dictionary as pickle if specified
+        if rank_genes_output:
+            with open(rank_genes_output, "wb") as f:
+                pickle.dump(adata.uns["rank_genes_groups"], f)
+            click.echo(
+                f"Successfully saved rank_genes_groups dictionary to {rank_genes_output}"
+            )
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
