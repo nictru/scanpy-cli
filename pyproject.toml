@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "bbknn>=1.6.0",
     "harmonypy>=0.0.10",
     "igraph>=0.11.8",
     "leidenalg>=0.10.2",
