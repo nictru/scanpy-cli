@@ -1,12 +1,8 @@
 import subprocess
-from pathlib import Path
 
 
-def test_umap_plot(test_h5ad_path):
+def test_umap_plot(test_h5ad_path, temp_plot_file):
     """Test that the umap plotting command runs successfully."""
-    # Create output path for the plot
-    output_path = Path(str(test_h5ad_path) + ".umap_plot.png")
-
     cmd = [
         "scanpy-cli",
         "pl",
@@ -14,7 +10,7 @@ def test_umap_plot(test_h5ad_path):
         "--input-file",
         str(test_h5ad_path),
         "--output-file",
-        str(output_path),
+        str(temp_plot_file),
         "--color",
         "louvain",
     ]
@@ -26,7 +22,7 @@ def test_umap_plot(test_h5ad_path):
     assert result.returncode == 0, f"UMAP plot command failed: {result.stderr}"
 
     # Check that the output file exists
-    assert output_path.exists(), "Output plot file was not created"
+    assert temp_plot_file.exists(), "Output plot file was not created"
 
     # Check that the output file is a valid image file
-    assert output_path.stat().st_size > 0, "Output plot file is empty"
+    assert temp_plot_file.stat().st_size > 0, "Output plot file is empty"

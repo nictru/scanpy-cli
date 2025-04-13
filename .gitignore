@@ -12,4 +12,3 @@ wheels/
 # Testing
 .pytest_cache/
 .coverage*
-data

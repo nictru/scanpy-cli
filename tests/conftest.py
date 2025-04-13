@@ -121,3 +121,16 @@ def temp_output_file(suffix=".png"):
     # Cleanup after test
     if tmp_path.exists():
         tmp_path.unlink()
+
+
+@pytest.fixture
+def temp_plot_file():
+    """Create a temporary plot file for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+
+    yield tmp_path
+
+    # Cleanup after test
+    if tmp_path.exists():
+        tmp_path.unlink()
