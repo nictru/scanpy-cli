@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+import pickle
 
 
 @click.command()
@@ -82,6 +83,11 @@ import sys
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@click.option(
+    "--embedding-output",
+    type=str,
+    help="Optional path to save the PCA embedding as a pickle file.",
+)
 def pca(
     n_comps,
     layer,
@@ -96,6 +102,7 @@ def pca(
     key_added,
     input_file,
     output_file,
+    embedding_output,
 ):
     """Principal component analysis [Pedregosa et al., 2011].
 
@@ -130,6 +137,14 @@ def pca(
 
         # Save the result
         adata.write(output_file)
+
+        # Save embedding as pickle if specified
+        if embedding_output:
+            embedding_key = key_added if key_added else "X_pca"
+            embedding = adata.obsm[embedding_key]
+            with open(embedding_output, "wb") as f:
+                pickle.dump(embedding, f)
+            click.echo(f"Successfully saved PCA embedding to {embedding_output}")
 
         click.echo(f"Successfully computed PCA and saved to {output_file}")
     except Exception as e:
