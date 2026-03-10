@@ -10,6 +10,11 @@ from scanpy_cli.pp.filter_genes import filter_genes
 from scanpy_cli.pp.filter_cells import filter_cells
 from scanpy_cli.pp.bbknn import bbknn
 from scanpy_cli.pp.scanorama import scanorama
+from scanpy_cli.pp.normalize_total import normalize_total
+from scanpy_cli.pp.log1p import log1p
+from scanpy_cli.pp.scale import scale
+from scanpy_cli.pp.calculate_qc_metrics import calculate_qc_metrics
+from scanpy_cli.pp.downsample_counts import downsample_counts
 
 
 @click.group()
@@ -29,3 +34,8 @@ pp.add_command(filter_genes)
 pp.add_command(filter_cells)
 pp.add_command(bbknn)
 pp.add_command(scanorama)
+pp.add_command(normalize_total)
+pp.add_command(log1p)
+pp.add_command(scale)
+pp.add_command(calculate_qc_metrics)
+pp.add_command(downsample_counts)
