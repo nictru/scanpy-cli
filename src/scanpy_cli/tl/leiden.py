@@ -1,8 +1,7 @@
 import rich_click as click
 import scanpy as sc
-import sys
 import pickle
-from scanpy_cli.utils import logger
+from scanpy_cli.utils import catch_errors, logger
 
 
 @click.command()
@@ -84,6 +83,7 @@ from scanpy_cli.utils import logger
     type=str,
     help="Optional path to save the cluster assignments as a pickle file.",
 )
+@catch_errors
 def leiden(
     resolution,
     random_state,
@@ -112,63 +112,58 @@ def leiden(
     - adata.obs[key_added]: Cluster assignments
     - adata.uns[key_added]['params']: Parameters used
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
+
+    restrict_to = None
+    if restrict_to_key and restrict_to_categories:
+        categories_list = restrict_to_categories.split(",")
+        restrict_to = (restrict_to_key, categories_list)
+    elif restrict_to_key or restrict_to_categories:
+        raise ValueError(
+            "restrict-to-key and restrict-to-categories must be provided together"
         )
 
-        restrict_to = None
-        if restrict_to_key and restrict_to_categories:
-            categories_list = restrict_to_categories.split(",")
-            restrict_to = (restrict_to_key, categories_list)
-        elif restrict_to_key or restrict_to_categories:
-            raise ValueError(
-                "restrict-to-key and restrict-to-categories must be provided together"
-            )
+    logger.debug(
+        "Leiden: resolution=%s, flavor=%s, key_added=%s, n_iterations=%s",
+        resolution,
+        flavor,
+        key_added,
+        n_iterations,
+    )
+    if neighbors_key:
+        logger.debug("Using neighbors stored under key '%s'", neighbors_key)
+    if obsp:
+        logger.debug("Using adjacency from obsp['%s']", obsp)
 
-        logger.debug(
-            "Leiden: resolution=%s, flavor=%s, key_added=%s, n_iterations=%s",
-            resolution,
-            flavor,
-            key_added,
-            n_iterations,
-        )
-        if neighbors_key:
-            logger.debug("Using neighbors stored under key '%s'", neighbors_key)
-        if obsp:
-            logger.debug("Using adjacency from obsp['%s']", obsp)
+    sc.tl.leiden(
+        adata,
+        resolution=resolution,
+        random_state=random_state,
+        key_added=key_added,
+        use_weights=use_weights,
+        n_iterations=n_iterations,
+        neighbors_key=neighbors_key,
+        obsp=obsp,
+        flavor=flavor,
+        directed=directed,
+        restrict_to=restrict_to,
+    )
 
-        sc.tl.leiden(
-            adata,
-            resolution=resolution,
-            random_state=random_state,
-            key_added=key_added,
-            use_weights=use_weights,
-            n_iterations=n_iterations,
-            neighbors_key=neighbors_key,
-            obsp=obsp,
-            flavor=flavor,
-            directed=directed,
-            restrict_to=restrict_to,
-        )
+    n_clusters = adata.obs[key_added].nunique()
+    logger.info("Found %d clusters (key='%s')", n_clusters, key_added)
 
-        n_clusters = adata.obs[key_added].nunique()
-        logger.info("Found %d clusters (key='%s')", n_clusters, key_added)
+    adata.write(output_file)
+    logger.info(
+        "Successfully computed Leiden clustering with resolution %s and saved to %s",
+        resolution,
+        output_file,
+    )
 
-        adata.write(output_file)
-        logger.info(
-            "Successfully computed Leiden clustering with resolution %s and saved to %s",
-            resolution,
-            output_file,
-        )
-
-        if clusters_output:
-            clusters = adata.obs[[key_added]]
-            with open(clusters_output, "wb") as f:
-                pickle.dump(clusters, f)
-            logger.info("Successfully saved cluster assignments to %s", clusters_output)
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    if clusters_output:
+        clusters = adata.obs[[key_added]]
+        with open(clusters_output, "wb") as f:
+            pickle.dump(clusters, f)
+        logger.info("Successfully saved cluster assignments to %s", clusters_output)

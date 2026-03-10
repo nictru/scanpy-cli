@@ -1,7 +1,6 @@
 import rich_click as click
 import scanpy as sc
-import sys
-from scanpy_cli.utils import decimals_option, round_sparse, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_sparse, logger
 
 
 @click.command()
@@ -92,6 +91,7 @@ from scanpy_cli.utils import decimals_option, round_sparse, logger
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@catch_errors
 def neighbors(
     n_neighbors,
     n_pcs,
@@ -115,43 +115,39 @@ def neighbors(
     - adata.obsp['connectivities']: Weighted adjacency matrix
     - adata.uns['neighbors']: Parameters used
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
-        logger.debug(
-            "Neighbors: n_neighbors=%s, n_pcs=%s, use_rep=%s, method=%s, metric=%s",
-            n_neighbors,
-            n_pcs,
-            use_rep,
-            method,
-            metric,
-        )
-        if key_added:
-            logger.debug("Storing neighbors under key '%s'", key_added)
+    logger.debug(
+        "Neighbors: n_neighbors=%s, n_pcs=%s, use_rep=%s, method=%s, metric=%s",
+        n_neighbors,
+        n_pcs,
+        use_rep,
+        method,
+        metric,
+    )
+    if key_added:
+        logger.debug("Storing neighbors under key '%s'", key_added)
 
-        sc.pp.neighbors(
-            adata,
-            n_neighbors=n_neighbors,
-            n_pcs=n_pcs,
-            use_rep=use_rep,
-            knn=knn,
-            method=method,
-            metric=metric,
-            random_state=random_state,
-            key_added=key_added,
-        )
+    sc.pp.neighbors(
+        adata,
+        n_neighbors=n_neighbors,
+        n_pcs=n_pcs,
+        use_rep=use_rep,
+        knn=knn,
+        method=method,
+        metric=metric,
+        random_state=random_state,
+        key_added=key_added,
+    )
 
-        conn_key = f"{key_added}_connectivities" if key_added else "connectivities"
-        dist_key = f"{key_added}_distances" if key_added else "distances"
-        if decimals is not None:
-            adata.obsp[conn_key] = round_sparse(adata.obsp[conn_key], decimals)
-            adata.obsp[dist_key] = round_sparse(adata.obsp[dist_key], decimals)
-        adata.write(output_file)
+    conn_key = f"{key_added}_connectivities" if key_added else "connectivities"
+    dist_key = f"{key_added}_distances" if key_added else "distances"
+    if decimals is not None:
+        adata.obsp[conn_key] = round_sparse(adata.obsp[conn_key], decimals)
+        adata.obsp[dist_key] = round_sparse(adata.obsp[dist_key], decimals)
+    adata.write(output_file)
 
-        logger.info("Successfully computed neighbors and saved to %s", output_file)
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    logger.info("Successfully computed neighbors and saved to %s", output_file)

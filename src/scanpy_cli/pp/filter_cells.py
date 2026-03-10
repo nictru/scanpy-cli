@@ -1,7 +1,6 @@
 import rich_click as click
 import scanpy as sc
-import sys
-from scanpy_cli.utils import logger
+from scanpy_cli.utils import catch_errors, logger
 
 
 @click.command()
@@ -37,6 +36,7 @@ from scanpy_cli.utils import logger
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@catch_errors
 def filter_cells(min_counts, min_genes, max_counts, max_genes, input_file, output_file):
     """Filter cell outliers based on counts and numbers of genes expressed.
 
@@ -45,33 +45,29 @@ def filter_cells(min_counts, min_genes, max_counts, max_genes, input_file, outpu
 
     Only provide one of the optional parameters min_counts, min_genes, max_counts, max_genes per call.
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
-        n_obs_before = adata.n_obs
-        logger.debug(
-            "Filtering cells: min_counts=%s, min_genes=%s, max_counts=%s, max_genes=%s",
-            min_counts,
-            min_genes,
-            max_counts,
-            max_genes,
-        )
+    n_obs_before = adata.n_obs
+    logger.debug(
+        "Filtering cells: min_counts=%s, min_genes=%s, max_counts=%s, max_genes=%s",
+        min_counts,
+        min_genes,
+        max_counts,
+        max_genes,
+    )
 
-        sc.pp.filter_cells(
-            adata,
-            min_counts=min_counts,
-            min_genes=min_genes,
-            max_counts=max_counts,
-            max_genes=max_genes,
-        )
+    sc.pp.filter_cells(
+        adata,
+        min_counts=min_counts,
+        min_genes=min_genes,
+        max_counts=max_counts,
+        max_genes=max_genes,
+    )
 
-        logger.info("Retained %d / %d cells after filtering", adata.n_obs, n_obs_before)
+    logger.info("Retained %d / %d cells after filtering", adata.n_obs, n_obs_before)
 
-        adata.write(output_file)
-        logger.info("Successfully filtered cells and saved to %s", output_file)
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    adata.write(output_file)
+    logger.info("Successfully filtered cells and saved to %s", output_file)

@@ -1,8 +1,7 @@
 import rich_click as click
 import scanpy as sc
-import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_array, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_array, logger
 
 
 @click.command()
@@ -104,6 +103,7 @@ from scanpy_cli.utils import decimals_option, round_array, logger
     type=str,
     help="Optional path to save the UMAP embedding as a pickle file.",
 )
+@catch_errors
 def umap(
     min_dist,
     spread,
@@ -136,59 +136,54 @@ def umap(
     - adata.obsm['X_umap' | key_added]: UMAP coordinates
     - adata.uns['umap' | key_added]: UMAP parameters
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
-        embedding_key = key_added if key_added else "X_umap"
-        logger.debug(
-            "UMAP: min_dist=%s, spread=%s, n_components=%s, method=%s, key_added=%s",
-            min_dist,
-            spread,
-            n_components,
-            method,
-            embedding_key,
-        )
-        if neighbors_key:
-            logger.debug("Using neighbors stored under key '%s'", neighbors_key)
+    embedding_key = key_added if key_added else "X_umap"
+    logger.debug(
+        "UMAP: min_dist=%s, spread=%s, n_components=%s, method=%s, key_added=%s",
+        min_dist,
+        spread,
+        n_components,
+        method,
+        embedding_key,
+    )
+    if neighbors_key:
+        logger.debug("Using neighbors stored under key '%s'", neighbors_key)
 
-        sc.tl.umap(
-            adata,
-            min_dist=min_dist,
-            spread=spread,
-            n_components=n_components,
-            maxiter=maxiter,
-            alpha=alpha,
-            gamma=gamma,
-            negative_sample_rate=negative_sample_rate,
-            init_pos=init_pos,
-            random_state=random_state,
-            a=a,
-            b=b,
-            method=method,
-            key_added=key_added,
-            neighbors_key=neighbors_key,
-        )
+    sc.tl.umap(
+        adata,
+        min_dist=min_dist,
+        spread=spread,
+        n_components=n_components,
+        maxiter=maxiter,
+        alpha=alpha,
+        gamma=gamma,
+        negative_sample_rate=negative_sample_rate,
+        init_pos=init_pos,
+        random_state=random_state,
+        a=a,
+        b=b,
+        method=method,
+        key_added=key_added,
+        neighbors_key=neighbors_key,
+    )
 
-        logger.info(
-            "Stored embedding in obsm['%s'] with shape %s",
-            embedding_key,
-            adata.obsm[embedding_key].shape,
-        )
+    logger.info(
+        "Stored embedding in obsm['%s'] with shape %s",
+        embedding_key,
+        adata.obsm[embedding_key].shape,
+    )
 
-        if decimals is not None:
-            adata.obsm[embedding_key] = round_array(adata.obsm[embedding_key], decimals)
-        adata.write(output_file)
-        logger.info("Successfully computed UMAP embedding and saved to %s", output_file)
+    if decimals is not None:
+        adata.obsm[embedding_key] = round_array(adata.obsm[embedding_key], decimals)
+    adata.write(output_file)
+    logger.info("Successfully computed UMAP embedding and saved to %s", output_file)
 
-        if embedding_output:
-            embedding = adata.obsm[embedding_key]
-            with open(embedding_output, "wb") as f:
-                pickle.dump(embedding, f)
-            logger.info("Successfully saved UMAP embedding to %s", embedding_output)
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    if embedding_output:
+        embedding = adata.obsm[embedding_key]
+        with open(embedding_output, "wb") as f:
+            pickle.dump(embedding, f)
+        logger.info("Successfully saved UMAP embedding to %s", embedding_output)

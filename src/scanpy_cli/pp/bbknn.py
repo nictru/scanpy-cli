@@ -1,8 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import scanpy.external as sce
-import sys
-from scanpy_cli.utils import decimals_option, round_sparse, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_sparse, logger
 
 
 @click.command()
@@ -99,6 +98,7 @@ from scanpy_cli.utils import decimals_option, round_sparse, logger
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@catch_errors
 def bbknn(
     batch_key,
     use_rep,
@@ -130,47 +130,42 @@ def bbknn(
     - adata.obsp['distances']: Sparse matrix of distances
     - adata.uns['neighbors']: Neighbors information
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
+
+    logger.debug(
+        "BBKNN: batch_key=%s, use_rep=%s, neighbors_within_batch=%s, metric=%s, n_pcs=%s",
+        batch_key,
+        use_rep,
+        neighbors_within_batch,
+        metric,
+        n_pcs,
+    )
+
+    sce.pp.bbknn(
+        adata,
+        batch_key=batch_key,
+        use_rep=use_rep,
+        approx=approx,
+        use_annoy=use_annoy,
+        metric=metric,
+        neighbors_within_batch=neighbors_within_batch,
+        n_pcs=n_pcs,
+        trim=trim,
+        annoy_n_trees=annoy_n_trees,
+        pynndescent_n_neighbors=pynndescent_n_neighbors,
+        pynndescent_random_state=pynndescent_random_state,
+        use_faiss=use_faiss,
+        set_op_mix_ratio=set_op_mix_ratio,
+        local_connectivity=local_connectivity,
+    )
+
+    if decimals is not None:
+        adata.obsp["connectivities"] = round_sparse(
+            adata.obsp["connectivities"], decimals
         )
-
-        logger.debug(
-            "BBKNN: batch_key=%s, use_rep=%s, neighbors_within_batch=%s, metric=%s, n_pcs=%s",
-            batch_key,
-            use_rep,
-            neighbors_within_batch,
-            metric,
-            n_pcs,
-        )
-
-        sce.pp.bbknn(
-            adata,
-            batch_key=batch_key,
-            use_rep=use_rep,
-            approx=approx,
-            use_annoy=use_annoy,
-            metric=metric,
-            neighbors_within_batch=neighbors_within_batch,
-            n_pcs=n_pcs,
-            trim=trim,
-            annoy_n_trees=annoy_n_trees,
-            pynndescent_n_neighbors=pynndescent_n_neighbors,
-            pynndescent_random_state=pynndescent_random_state,
-            use_faiss=use_faiss,
-            set_op_mix_ratio=set_op_mix_ratio,
-            local_connectivity=local_connectivity,
-        )
-
-        if decimals is not None:
-            adata.obsp["connectivities"] = round_sparse(
-                adata.obsp["connectivities"], decimals
-            )
-            adata.obsp["distances"] = round_sparse(adata.obsp["distances"], decimals)
-        adata.write(output_file)
-        logger.info("Successfully ran BBKNN integration and saved to %s", output_file)
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+        adata.obsp["distances"] = round_sparse(adata.obsp["distances"], decimals)
+    adata.write(output_file)
+    logger.info("Successfully ran BBKNN integration and saved to %s", output_file)

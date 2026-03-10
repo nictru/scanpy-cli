@@ -1,9 +1,8 @@
 import rich_click as click
 import scanpy as sc
 import scanpy.external as sce
-import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_array, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_array, logger
 
 
 @click.command()
@@ -72,6 +71,7 @@ from scanpy_cli.utils import decimals_option, round_array, logger
     type=str,
     help="Optional path to save the integrated embedding as a pickle file.",
 )
+@catch_errors
 def scanorama(
     key,
     basis,
@@ -94,57 +94,46 @@ def scanorama(
     Results are stored in the AnnData object:
     - adata.obsm[adjusted_basis]: Scanorama embeddings such that different experiments are integrated
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
-        logger.debug(
-            "Scanorama: key=%s, basis=%s, adjusted_basis=%s, knn=%s, sigma=%s, approx=%s",
-            key,
-            basis,
-            adjusted_basis,
-            knn,
-            sigma,
-            approx,
-        )
+    logger.debug(
+        "Scanorama: key=%s, basis=%s, adjusted_basis=%s, knn=%s, sigma=%s, approx=%s",
+        key,
+        basis,
+        adjusted_basis,
+        knn,
+        sigma,
+        approx,
+    )
 
-        sce.pp.scanorama_integrate(
-            adata,
-            key=key,
-            basis=basis,
-            adjusted_basis=adjusted_basis,
-            knn=knn,
-            sigma=sigma,
-            approx=approx,
-            alpha=alpha,
-            batch_size=batch_size,
-        )
+    sce.pp.scanorama_integrate(
+        adata,
+        key=key,
+        basis=basis,
+        adjusted_basis=adjusted_basis,
+        knn=knn,
+        sigma=sigma,
+        approx=approx,
+        alpha=alpha,
+        batch_size=batch_size,
+    )
 
-        logger.info(
-            "Stored embedding in obsm['%s'] with shape %s",
-            adjusted_basis,
-            adata.obsm[adjusted_basis].shape,
-        )
+    logger.info(
+        "Stored embedding in obsm['%s'] with shape %s",
+        adjusted_basis,
+        adata.obsm[adjusted_basis].shape,
+    )
 
-        if decimals is not None:
-            adata.obsm[adjusted_basis] = round_array(
-                adata.obsm[adjusted_basis], decimals
-            )
-        adata.write(output_file)
-        logger.info(
-            "Successfully ran Scanorama integration and saved to %s", output_file
-        )
+    if decimals is not None:
+        adata.obsm[adjusted_basis] = round_array(adata.obsm[adjusted_basis], decimals)
+    adata.write(output_file)
+    logger.info("Successfully ran Scanorama integration and saved to %s", output_file)
 
-        if embedding_output:
-            embedding = adata.obsm[adjusted_basis]
-            with open(embedding_output, "wb") as f:
-                pickle.dump(embedding, f)
-            logger.info(
-                "Successfully saved Scanorama embedding to %s", embedding_output
-            )
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    if embedding_output:
+        embedding = adata.obsm[adjusted_basis]
+        with open(embedding_output, "wb") as f:
+            pickle.dump(embedding, f)
+        logger.info("Successfully saved Scanorama embedding to %s", embedding_output)

@@ -1,8 +1,7 @@
 import rich_click as click
 import scanpy as sc
-import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_uns_dict, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_uns_dict, logger
 
 
 @click.command(name="rank-genes-groups")
@@ -92,6 +91,7 @@ from scanpy_cli.utils import decimals_option, round_uns_dict, logger
     type=str,
     help="Optional path to save rank_genes_groups dictionary as a pickle file.",
 )
+@catch_errors
 def rank_genes_groups(
     groupby,
     groups,
@@ -124,57 +124,52 @@ def rank_genes_groups(
     - adata.uns['rank_genes_groups']['pts']: Fraction of cells expressing the genes (if pts=True)
     - adata.uns['rank_genes_groups']['pts_rest']: Fraction of cells from the rest expressing the genes (if reference='rest')
     """
-    try:
-        adata = sc.read_h5ad(input_file)
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
+
+    logger.debug(
+        "rank_genes_groups: groupby=%s, method=%s, groups=%s, reference=%s, n_genes=%s",
+        groupby,
+        method,
+        groups,
+        reference,
+        n_genes,
+    )
+    if layer:
+        logger.debug("Using layer '%s' for differential expression", layer)
+    elif use_raw:
+        logger.debug("Using raw data for differential expression")
+
+    sc.tl.rank_genes_groups(
+        adata,
+        groupby=groupby,
+        groups=groups,
+        reference=reference,
+        n_genes=n_genes,
+        use_raw=use_raw,
+        layer=layer,
+        method=method,
+        corr_method=corr_method,
+        mask_var=mask_var,
+        rankby_abs=rankby_abs,
+        pts=pts,
+        tie_correct=tie_correct,
+    )
+
+    result_groups = list(adata.uns["rank_genes_groups"]["names"].dtype.names)
+    logger.info("Ranked genes for %d groups: %s", len(result_groups), result_groups)
+
+    if decimals is not None:
+        round_uns_dict(adata.uns["rank_genes_groups"], decimals)
+    adata.write(output_file)
+    logger.info("Successfully ran rank_genes_groups and saved to %s", output_file)
+
+    if rank_genes_output:
+        with open(rank_genes_output, "wb") as f:
+            pickle.dump(adata.uns["rank_genes_groups"], f)
         logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+            "Successfully saved rank_genes_groups dictionary to %s",
+            rank_genes_output,
         )
-
-        logger.debug(
-            "rank_genes_groups: groupby=%s, method=%s, groups=%s, reference=%s, n_genes=%s",
-            groupby,
-            method,
-            groups,
-            reference,
-            n_genes,
-        )
-        if layer:
-            logger.debug("Using layer '%s' for differential expression", layer)
-        elif use_raw:
-            logger.debug("Using raw data for differential expression")
-
-        sc.tl.rank_genes_groups(
-            adata,
-            groupby=groupby,
-            groups=groups,
-            reference=reference,
-            n_genes=n_genes,
-            use_raw=use_raw,
-            layer=layer,
-            method=method,
-            corr_method=corr_method,
-            mask_var=mask_var,
-            rankby_abs=rankby_abs,
-            pts=pts,
-            tie_correct=tie_correct,
-        )
-
-        result_groups = list(adata.uns["rank_genes_groups"]["names"].dtype.names)
-        logger.info("Ranked genes for %d groups: %s", len(result_groups), result_groups)
-
-        if decimals is not None:
-            round_uns_dict(adata.uns["rank_genes_groups"], decimals)
-        adata.write(output_file)
-        logger.info("Successfully ran rank_genes_groups and saved to %s", output_file)
-
-        if rank_genes_output:
-            with open(rank_genes_output, "wb") as f:
-                pickle.dump(adata.uns["rank_genes_groups"], f)
-            logger.info(
-                "Successfully saved rank_genes_groups dictionary to %s",
-                rank_genes_output,
-            )
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)

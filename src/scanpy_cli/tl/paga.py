@@ -1,7 +1,6 @@
 import rich_click as click
 import scanpy as sc
-import sys
-from scanpy_cli.utils import decimals_option, round_sparse, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_sparse, logger
 
 
 @click.command()
@@ -41,6 +40,7 @@ from scanpy_cli.utils import decimals_option, round_sparse, logger
     required=True,
     help="Output h5ad file to save the processed AnnData object.",
 )
+@catch_errors
 def paga(
     groups,
     use_rna_velocity,
@@ -64,39 +64,35 @@ def paga(
     - adata.uns['paga']['connectivities']: Sparse matrix with connectivities
     - adata.uns['paga']['connectivities_tree']: Sparse matrix with tree connectivities
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
-        logger.debug(
-            "PAGA: groups=%s, model=%s, use_rna_velocity=%s, neighbors_key=%s",
-            groups,
-            model,
-            use_rna_velocity,
-            neighbors_key,
-        )
+    logger.debug(
+        "PAGA: groups=%s, model=%s, use_rna_velocity=%s, neighbors_key=%s",
+        groups,
+        model,
+        use_rna_velocity,
+        neighbors_key,
+    )
 
-        sc.tl.paga(
-            adata,
-            groups=groups,
-            use_rna_velocity=use_rna_velocity,
-            model=model,
-            neighbors_key=neighbors_key,
-        )
+    sc.tl.paga(
+        adata,
+        groups=groups,
+        use_rna_velocity=use_rna_velocity,
+        model=model,
+        neighbors_key=neighbors_key,
+    )
 
-        n_nodes = adata.uns["paga"]["connectivities"].shape[0]
-        logger.info("PAGA graph has %d nodes", n_nodes)
+    n_nodes = adata.uns["paga"]["connectivities"].shape[0]
+    logger.info("PAGA graph has %d nodes", n_nodes)
 
-        if decimals is not None:
-            paga = adata.uns["paga"]
-            for key in ("connectivities", "connectivities_tree"):
-                if key in paga:
-                    paga[key] = round_sparse(paga[key], decimals)
-        adata.write(output_file)
+    if decimals is not None:
+        paga = adata.uns["paga"]
+        for key in ("connectivities", "connectivities_tree"):
+            if key in paga:
+                paga[key] = round_sparse(paga[key], decimals)
+    adata.write(output_file)
 
-        logger.info("Successfully ran PAGA and saved to %s", output_file)
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    logger.info("Successfully ran PAGA and saved to %s", output_file)

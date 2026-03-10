@@ -1,9 +1,8 @@
 import rich_click as click
 import scanpy as sc
-import sys
 import numpy as np
 import pickle
-from scanpy_cli.utils import decimals_option, round_array, logger
+from scanpy_cli.utils import catch_errors, decimals_option, round_array, logger
 
 
 @click.command()
@@ -97,6 +96,7 @@ from scanpy_cli.utils import decimals_option, round_array, logger
     type=str,
     help="Optional path to save the highly variable genes information as a pickle file.",
 )
+@catch_errors
 def highly_variable_genes(
     n_top_genes,
     min_mean,
@@ -131,73 +131,67 @@ def highly_variable_genes(
     - adata.var['highly_variable_nbatches']: If batch_key is given, this denotes in how many batches genes are detected as HVG
     - adata.var['highly_variable_intersection']: If batch_key is given, this denotes the genes that are highly variable in all batches
     """
-    try:
-        adata = sc.read_h5ad(input_file)
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
+
+    logger.debug(
+        "HVG: flavor=%s, n_top_genes=%s, batch_key=%s, layer=%s, subset=%s",
+        flavor,
+        n_top_genes,
+        batch_key,
+        layer,
+        subset,
+    )
+    if batch_key:
+        logger.debug("Running per-batch HVG selection with batch key '%s'", batch_key)
+    if layer:
+        logger.debug("Using layer '%s' for variance estimation", layer)
+
+    sc.pp.highly_variable_genes(
+        adata,
+        n_top_genes=n_top_genes,
+        min_mean=min_mean,
+        max_mean=max_mean,
+        min_disp=min_disp,
+        max_disp=max_disp,
+        span=span,
+        n_bins=n_bins,
+        flavor=flavor,
+        batch_key=batch_key,
+        layer=layer,
+        subset=subset,
+        inplace=inplace,
+        check_values=check_values,
+    )
+
+    n_hvg = int(adata.var["highly_variable"].sum())
+    logger.info("Found %d / %d highly variable genes", n_hvg, adata.n_vars)
+    if subset:
+        logger.info("Subsetted to %d HVGs in-place", adata.n_vars)
+
+    if decimals is not None:
+        float_cols = [
+            "means",
+            "dispersions",
+            "dispersions_norm",
+            "variances",
+            "variances_norm",
+        ]
+        for col in float_cols:
+            if col in adata.var.columns:
+                adata.var[col] = round_array(adata.var[col].to_numpy(), decimals)
+    adata.write(output_file)
+
+    if hvg_output:
+        hvg_info = adata.var[["highly_variable"]]
+        with open(hvg_output, "wb") as f:
+            pickle.dump(hvg_info, f)
         logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+            "Successfully saved highly variable genes information to %s", hvg_output
         )
 
-        logger.debug(
-            "HVG: flavor=%s, n_top_genes=%s, batch_key=%s, layer=%s, subset=%s",
-            flavor,
-            n_top_genes,
-            batch_key,
-            layer,
-            subset,
-        )
-        if batch_key:
-            logger.debug(
-                "Running per-batch HVG selection with batch key '%s'", batch_key
-            )
-        if layer:
-            logger.debug("Using layer '%s' for variance estimation", layer)
-
-        sc.pp.highly_variable_genes(
-            adata,
-            n_top_genes=n_top_genes,
-            min_mean=min_mean,
-            max_mean=max_mean,
-            min_disp=min_disp,
-            max_disp=max_disp,
-            span=span,
-            n_bins=n_bins,
-            flavor=flavor,
-            batch_key=batch_key,
-            layer=layer,
-            subset=subset,
-            inplace=inplace,
-            check_values=check_values,
-        )
-
-        n_hvg = int(adata.var["highly_variable"].sum())
-        logger.info("Found %d / %d highly variable genes", n_hvg, adata.n_vars)
-        if subset:
-            logger.info("Subsetted to %d HVGs in-place", adata.n_vars)
-
-        if decimals is not None:
-            float_cols = [
-                "means",
-                "dispersions",
-                "dispersions_norm",
-                "variances",
-                "variances_norm",
-            ]
-            for col in float_cols:
-                if col in adata.var.columns:
-                    adata.var[col] = round_array(adata.var[col].to_numpy(), decimals)
-        adata.write(output_file)
-
-        if hvg_output:
-            hvg_info = adata.var[["highly_variable"]]
-            with open(hvg_output, "wb") as f:
-                pickle.dump(hvg_info, f)
-            logger.info(
-                "Successfully saved highly variable genes information to %s", hvg_output
-            )
-
-        logger.info(
-            "Successfully detected highly variable genes and saved to %s", output_file
-        )
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    logger.info(
+        "Successfully detected highly variable genes and saved to %s", output_file
+    )

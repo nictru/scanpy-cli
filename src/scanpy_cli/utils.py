@@ -1,4 +1,6 @@
+import functools
 import logging
+import sys
 
 import numpy as np
 import scipy.sparse
@@ -7,6 +9,18 @@ from rich.logging import RichHandler
 
 
 logger = logging.getLogger("scanpy_cli")
+
+
+def catch_errors(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(str(e))
+            sys.exit(1)
+
+    return wrapper
 
 
 def setup_logging(level: int = logging.WARNING) -> None:

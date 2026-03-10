@@ -1,9 +1,8 @@
 import rich_click as click
 import scanpy as sc
-import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
-from scanpy_cli.utils import logger
+from scanpy_cli.utils import catch_errors, logger
 
 
 @click.command()
@@ -176,6 +175,7 @@ from scanpy_cli.utils import logger
     "--figsize",
     help="Figure size in inches (comma-separated, e.g., '6,4').",
 )
+@catch_errors
 def umap(
     input_file,
     output_file,
@@ -216,101 +216,94 @@ def umap(
 
     The UMAP embeddings need to be computed first using the 'scanpy-cli tl umap' command.
     """
-    try:
-        adata = sc.read_h5ad(input_file)
-        logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
-        )
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
 
+    try:
+        dimensions = [int(x) for x in dimensions.split(",")]
+    except ValueError:
+        raise ValueError("--dimensions should be comma-separated integers, e.g., '0,1'")
+
+    if outline_color:
         try:
-            dimensions = [int(x) for x in dimensions.split(",")]
+            outline_color = tuple(outline_color.split(","))
+            if len(outline_color) != 2:
+                raise ValueError()
         except ValueError:
             raise ValueError(
-                "--dimensions should be comma-separated integers, e.g., '0,1'"
+                "--outline-color should be two comma-separated colors, e.g., 'black,white'"
             )
 
-        if outline_color:
-            try:
-                outline_color = tuple(outline_color.split(","))
-                if len(outline_color) != 2:
-                    raise ValueError()
-            except ValueError:
-                raise ValueError(
-                    "--outline-color should be two comma-separated colors, e.g., 'black,white'"
-                )
+    if outline_width:
+        try:
+            outline_width = tuple(float(x) for x in outline_width.split(","))
+            if len(outline_width) != 2:
+                raise ValueError()
+        except ValueError:
+            raise ValueError(
+                "--outline-width should be two comma-separated floats, e.g., '0.3,0.05'"
+            )
 
-        if outline_width:
-            try:
-                outline_width = tuple(float(x) for x in outline_width.split(","))
-                if len(outline_width) != 2:
-                    raise ValueError()
-            except ValueError:
-                raise ValueError(
-                    "--outline-width should be two comma-separated floats, e.g., '0.3,0.05'"
-                )
+    if figsize:
+        try:
+            figsize = tuple(float(x) for x in figsize.split(","))
+            if len(figsize) != 2:
+                raise ValueError()
+        except ValueError:
+            raise ValueError(
+                "--figsize should be two comma-separated floats, e.g., '6,4'"
+            )
 
-        if figsize:
-            try:
-                figsize = tuple(float(x) for x in figsize.split(","))
-                if len(figsize) != 2:
-                    raise ValueError()
-            except ValueError:
-                raise ValueError(
-                    "--figsize should be two comma-separated floats, e.g., '6,4'"
-                )
+    logger.debug(
+        "UMAP plot: color=%s, projection=%s, dimensions=%s, dpi=%s",
+        color,
+        projection,
+        dimensions,
+        dpi,
+    )
 
-        logger.debug(
-            "UMAP plot: color=%s, projection=%s, dimensions=%s, dpi=%s",
-            color,
-            projection,
-            dimensions,
-            dpi,
-        )
+    sc.settings.set_figure_params(dpi=dpi, figsize=figsize)
 
-        sc.settings.set_figure_params(dpi=dpi, figsize=figsize)
+    sc.pl.umap(
+        adata,
+        color=color if color else None,
+        gene_symbols=gene_symbols,
+        use_raw=use_raw,
+        layer=layer,
+        dimensions=dimensions,
+        projection=projection,
+        legend_loc=legend_loc,
+        legend_fontsize=legend_fontsize,
+        legend_fontweight=legend_fontweight,
+        legend_fontoutline=legend_fontoutline,
+        colorbar_loc=colorbar_loc,
+        size=size,
+        color_map=color_map,
+        palette=palette,
+        na_color=na_color,
+        na_in_legend=na_in_legend,
+        frameon=frameon,
+        title=title,
+        vmin=vmin,
+        vmax=vmax,
+        vcenter=vcenter,
+        add_outline=add_outline,
+        outline_color=outline_color,
+        outline_width=outline_width,
+        ncols=ncols,
+        wspace=wspace,
+        hspace=hspace,
+        show=False,
+        save=False,
+        return_fig=True,
+    )
 
-        sc.pl.umap(
-            adata,
-            color=color if color else None,
-            gene_symbols=gene_symbols,
-            use_raw=use_raw,
-            layer=layer,
-            dimensions=dimensions,
-            projection=projection,
-            legend_loc=legend_loc,
-            legend_fontsize=legend_fontsize,
-            legend_fontweight=legend_fontweight,
-            legend_fontoutline=legend_fontoutline,
-            colorbar_loc=colorbar_loc,
-            size=size,
-            color_map=color_map,
-            palette=palette,
-            na_color=na_color,
-            na_in_legend=na_in_legend,
-            frameon=frameon,
-            title=title,
-            vmin=vmin,
-            vmax=vmax,
-            vcenter=vcenter,
-            add_outline=add_outline,
-            outline_color=outline_color,
-            outline_width=outline_width,
-            ncols=ncols,
-            wspace=wspace,
-            hspace=hspace,
-            show=False,
-            save=False,
-            return_fig=True,
-        )
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        output_path = Path(output_file)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_file, dpi=dpi, bbox_inches="tight")
+    plt.close()
 
-        plt.savefig(output_file, dpi=dpi, bbox_inches="tight")
-        plt.close()
-
-        logger.info("Successfully created UMAP plot and saved to %s", output_file)
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
+    logger.info("Successfully created UMAP plot and saved to %s", output_file)

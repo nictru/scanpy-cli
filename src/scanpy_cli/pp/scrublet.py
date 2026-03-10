@@ -1,7 +1,6 @@
 import rich_click as click
 import scanpy as sc
-import sys
-from scanpy_cli.utils import logger
+from scanpy_cli.utils import catch_errors, logger
 
 
 @click.command()
@@ -135,6 +134,7 @@ from scanpy_cli.utils import logger
     type=str,
     help="Optional path to save doublet predictions and scores as a pickle file.",
 )
+@catch_errors
 def scrublet(
     expected_doublet_rate,
     stdev_doublet_rate,
@@ -168,80 +168,73 @@ def scrublet(
     - adata.uns['scrublet']['doublet_parents']: Pairs of obs_names used to generate each simulated doublet
     - adata.uns['scrublet']['parameters']: Dictionary of Scrublet parameters
     """
-    try:
-        adata = sc.read_h5ad(input_file)
+    adata = sc.read_h5ad(input_file)
+    logger.info(
+        "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+    )
+
+    logger.debug(
+        "Scrublet: expected_doublet_rate=%s, sim_doublet_ratio=%s, n_prin_comps=%s, "
+        "knn_dist_metric=%s, threshold=%s, batch_key=%s",
+        expected_doublet_rate,
+        sim_doublet_ratio,
+        n_prin_comps,
+        knn_dist_metric,
+        threshold,
+        batch_key,
+    )
+    if batch_key:
+        logger.debug("Running Scrublet with batch correction on key '%s'", batch_key)
+    if threshold is not None:
+        logger.debug("Using manual doublet score threshold: %s", threshold)
+    else:
+        logger.debug("Doublet score threshold will be auto-detected")
+
+    sc.pp.scrublet(
+        adata,
+        expected_doublet_rate=expected_doublet_rate,
+        stdev_doublet_rate=stdev_doublet_rate,
+        sim_doublet_ratio=sim_doublet_ratio,
+        synthetic_doublet_umi_subsampling=synthetic_doublet_umi_subsampling,
+        knn_dist_metric=knn_dist_metric,
+        normalize_variance=normalize_variance,
+        log_transform=log_transform,
+        mean_center=mean_center,
+        n_prin_comps=n_prin_comps,
+        use_approx_neighbors=use_approx_neighbors,
+        get_doublet_neighbor_parents=get_doublet_neighbor_parents,
+        n_neighbors=n_neighbors,
+        threshold=threshold,
+        batch_key=batch_key,
+        random_state=random_state,
+    )
+
+    n_doublets = int(adata.obs["predicted_doublet"].sum())
+    pct = n_doublets / adata.n_obs * 100
+    logger.info(
+        "Predicted %d doublets (%.1f%%) out of %d cells",
+        n_doublets,
+        pct,
+        adata.n_obs,
+    )
+    logger.debug(
+        "Doublet score threshold used: %s",
+        adata.uns.get("scrublet", {}).get("threshold"),
+    )
+
+    adata.write(output_file)
+    logger.info(
+        "Successfully ran Scrublet doublet detection and saved to %s", output_file
+    )
+
+    if doublet_output:
+        doublet_df = adata.obs[["predicted_doublet", "doublet_score"]].copy()
+        doublet_df.columns = [
+            "scrublet_predicted_doublet",
+            "scrublet_doublet_score",
+        ]
+        doublet_df.to_pickle(doublet_output)
         logger.info(
-            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+            "Successfully saved doublet predictions and scores to %s",
+            doublet_output,
         )
-
-        logger.debug(
-            "Scrublet: expected_doublet_rate=%s, sim_doublet_ratio=%s, n_prin_comps=%s, "
-            "knn_dist_metric=%s, threshold=%s, batch_key=%s",
-            expected_doublet_rate,
-            sim_doublet_ratio,
-            n_prin_comps,
-            knn_dist_metric,
-            threshold,
-            batch_key,
-        )
-        if batch_key:
-            logger.debug(
-                "Running Scrublet with batch correction on key '%s'", batch_key
-            )
-        if threshold is not None:
-            logger.debug("Using manual doublet score threshold: %s", threshold)
-        else:
-            logger.debug("Doublet score threshold will be auto-detected")
-
-        sc.pp.scrublet(
-            adata,
-            expected_doublet_rate=expected_doublet_rate,
-            stdev_doublet_rate=stdev_doublet_rate,
-            sim_doublet_ratio=sim_doublet_ratio,
-            synthetic_doublet_umi_subsampling=synthetic_doublet_umi_subsampling,
-            knn_dist_metric=knn_dist_metric,
-            normalize_variance=normalize_variance,
-            log_transform=log_transform,
-            mean_center=mean_center,
-            n_prin_comps=n_prin_comps,
-            use_approx_neighbors=use_approx_neighbors,
-            get_doublet_neighbor_parents=get_doublet_neighbor_parents,
-            n_neighbors=n_neighbors,
-            threshold=threshold,
-            batch_key=batch_key,
-            random_state=random_state,
-        )
-
-        n_doublets = int(adata.obs["predicted_doublet"].sum())
-        pct = n_doublets / adata.n_obs * 100
-        logger.info(
-            "Predicted %d doublets (%.1f%%) out of %d cells",
-            n_doublets,
-            pct,
-            adata.n_obs,
-        )
-        logger.debug(
-            "Doublet score threshold used: %s",
-            adata.uns.get("scrublet", {}).get("threshold"),
-        )
-
-        adata.write(output_file)
-        logger.info(
-            "Successfully ran Scrublet doublet detection and saved to %s", output_file
-        )
-
-        if doublet_output:
-            doublet_df = adata.obs[["predicted_doublet", "doublet_score"]].copy()
-            doublet_df.columns = [
-                "scrublet_predicted_doublet",
-                "scrublet_doublet_score",
-            ]
-            doublet_df.to_pickle(doublet_output)
-            logger.info(
-                "Successfully saved doublet predictions and scores to %s",
-                doublet_output,
-            )
-
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
