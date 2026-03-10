@@ -2,7 +2,7 @@ import rich_click as click
 import scanpy as sc
 import scanpy.external as sce
 import sys
-from scanpy_cli.utils import decimals_option, round_sparse
+from scanpy_cli.utils import decimals_option, round_sparse, logger
 
 
 @click.command()
@@ -131,10 +131,20 @@ def bbknn(
     - adata.uns['neighbors']: Neighbors information
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's external bbknn function
+        logger.debug(
+            "BBKNN: batch_key=%s, use_rep=%s, neighbors_within_batch=%s, metric=%s, n_pcs=%s",
+            batch_key,
+            use_rep,
+            neighbors_within_batch,
+            metric,
+            n_pcs,
+        )
+
         sce.pp.bbknn(
             adata,
             batch_key=batch_key,
@@ -153,15 +163,14 @@ def bbknn(
             local_connectivity=local_connectivity,
         )
 
-        # Save the result
         if decimals is not None:
             adata.obsp["connectivities"] = round_sparse(
                 adata.obsp["connectivities"], decimals
             )
             adata.obsp["distances"] = round_sparse(adata.obsp["distances"], decimals)
         adata.write(output_file)
-        click.echo(f"Successfully ran BBKNN integration and saved to {output_file}")
+        logger.info("Successfully ran BBKNN integration and saved to %s", output_file)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

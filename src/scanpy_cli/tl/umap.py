@@ -2,7 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_array
+from scanpy_cli.utils import decimals_option, round_array, logger
 
 
 @click.command()
@@ -137,10 +137,23 @@ def umap(
     - adata.uns['umap' | key_added]: UMAP parameters
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's umap function
+        embedding_key = key_added if key_added else "X_umap"
+        logger.debug(
+            "UMAP: min_dist=%s, spread=%s, n_components=%s, method=%s, key_added=%s",
+            min_dist,
+            spread,
+            n_components,
+            method,
+            embedding_key,
+        )
+        if neighbors_key:
+            logger.debug("Using neighbors stored under key '%s'", neighbors_key)
+
         sc.tl.umap(
             adata,
             min_dist=min_dist,
@@ -159,20 +172,23 @@ def umap(
             neighbors_key=neighbors_key,
         )
 
-        # Save the result
-        embedding_key = key_added if key_added else "X_umap"
+        logger.info(
+            "Stored embedding in obsm['%s'] with shape %s",
+            embedding_key,
+            adata.obsm[embedding_key].shape,
+        )
+
         if decimals is not None:
             adata.obsm[embedding_key] = round_array(adata.obsm[embedding_key], decimals)
         adata.write(output_file)
-        click.echo(f"Successfully computed UMAP embedding and saved to {output_file}")
+        logger.info("Successfully computed UMAP embedding and saved to %s", output_file)
 
-        # Save embedding as pickle if specified
         if embedding_output:
             embedding = adata.obsm[embedding_key]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)
-            click.echo(f"Successfully saved UMAP embedding to {embedding_output}")
+            logger.info("Successfully saved UMAP embedding to %s", embedding_output)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

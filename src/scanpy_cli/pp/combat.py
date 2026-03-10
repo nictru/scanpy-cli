@@ -2,7 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import numpy as np
-from scanpy_cli.utils import decimals_option, round_array
+from scanpy_cli.utils import decimals_option, round_array, logger
 
 
 @click.command()
@@ -77,29 +77,35 @@ def combat(
         Layer to store the corrected data in. If 'X', updates the main data matrix. Otherwise stores in layers.
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Store original X if needed
         original_x = None
         if in_layer != "X":
+            logger.debug(
+                "Using layer '%s' as input (swapping into adata.X temporarily)",
+                in_layer,
+            )
             original_x = adata.X.copy()
             adata.X = adata.layers[in_layer]
 
-        # Process covariates if provided
         covariates_list = None
         if covariates:
             covariates_list = covariates.split(",")
+            logger.debug("Adjusting for covariates: %s", covariates_list)
 
-        # Call scanpy's combat function
         corrected = sc.pp.combat(
             adata, key=key, covariates=covariates_list, inplace=False
         )
 
         if out_layer == "X":
             adata.X = corrected
+            logger.debug("Stored corrected data in adata.X")
         else:
             adata.layers[out_layer] = corrected
+            logger.debug("Stored corrected data in layer '%s'", out_layer)
             if in_layer != "X":
                 adata.X = original_x
 
@@ -111,16 +117,16 @@ def combat(
                     np.asarray(adata.layers[out_layer]), decimals
                 )
 
-        # Save the result
         adata.write(output_file)
-        click.echo(
-            f"Successfully ran ComBat batch correction and saved to {output_file}"
+        logger.info(
+            "Successfully ran ComBat batch correction and saved to %s", output_file
         )
 
-        # Save corrected data as numpy file if specified
         if corrected_output:
             np.save(corrected_output, corrected)
-            click.echo(f"Successfully saved batch-corrected data to {corrected_output}")
+            logger.info(
+                "Successfully saved batch-corrected data to %s", corrected_output
+            )
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

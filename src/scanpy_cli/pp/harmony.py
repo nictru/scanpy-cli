@@ -4,7 +4,7 @@ import sys
 import pickle
 import numpy as np
 import harmonypy
-from scanpy_cli.utils import decimals_option, round_array
+from scanpy_cli.utils import decimals_option, round_array, logger
 
 
 @click.command()
@@ -77,33 +77,49 @@ def harmony(
     """
     try:
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
         out_key = adjusted_basis if adjusted_basis is not None else f"{basis}_harmony"
+        logger.debug(
+            "Harmony: key=%s, basis=%s, out_key=%s, theta=%s",
+            key,
+            basis,
+            out_key,
+            theta,
+        )
 
         kwargs = {}
         if theta is not None:
             kwargs["theta"] = theta
 
-        # Call harmonypy directly to avoid scanpy wrapper's transpose mismatch
-        # with harmonypy >= 0.2.0 (Z_corr already returns (N, d), no extra .T needed)
         x = adata.obsm[basis].astype(np.float64)
         harmony_out = harmonypy.run_harmony(
             x, adata.obs, key, random_state=random_state, device="cpu", **kwargs
         )
         adata.obsm[out_key] = harmony_out.Z_corr
 
+        logger.info(
+            "Stored embedding in obsm['%s'] with shape %s",
+            out_key,
+            adata.obsm[out_key].shape,
+        )
+
         if decimals is not None:
             adata.obsm[out_key] = round_array(adata.obsm[out_key], decimals)
 
         adata.write(output_file)
-        click.echo(f"Successfully ran Harmony integration and saved to {output_file}")
+        logger.info("Successfully ran Harmony integration and saved to %s", output_file)
 
         if embedding_output:
             embedding = adata.obsm[out_key]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)
-            click.echo(f"Successfully saved harmonized embedding to {embedding_output}")
+            logger.info(
+                "Successfully saved harmonized embedding to %s", embedding_output
+            )
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

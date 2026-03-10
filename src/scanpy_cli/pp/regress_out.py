@@ -2,6 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import numpy as np
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -38,26 +39,30 @@ def regress_out(keys, layer, n_jobs, input_file, output_file, regressed_output):
     KEYS: Keys for observation annotation on which to regress. Can be a comma-separated list.
     """
     try:
-        # Parse comma-separated keys if provided
         keys_list = keys.split(",")
+        logger.debug("Regressing out keys: %s", keys_list)
 
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
-
-        # Call scanpy's regress_out function
-        sc.pp.regress_out(adata, keys=keys_list, layer=layer, n_jobs=n_jobs)
-
-        # Save the result
-        adata.write(output_file)
-        click.echo(
-            f"Successfully regressed out {keys} from data and saved to {output_file}"
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
         )
 
-        # Save regressed data as numpy file if specified
+        if layer:
+            logger.debug("Using layer '%s' as input", layer)
+        else:
+            logger.debug("Using adata.X as input")
+
+        sc.pp.regress_out(adata, keys=keys_list, layer=layer, n_jobs=n_jobs)
+
+        adata.write(output_file)
+        logger.info(
+            "Successfully regressed out %s from data and saved to %s", keys, output_file
+        )
+
         if regressed_output:
             np.save(regressed_output, adata.layers[layer] if layer else adata.X)
-            click.echo(f"Successfully saved regressed data to {regressed_output}")
+            logger.info("Successfully saved regressed data to %s", regressed_output)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

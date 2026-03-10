@@ -3,7 +3,7 @@ import scanpy as sc
 import scanpy.external as sce
 import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_array
+from scanpy_cli.utils import decimals_option, round_array, logger
 
 
 @click.command()
@@ -95,10 +95,21 @@ def scanorama(
     - adata.obsm[adjusted_basis]: Scanorama embeddings such that different experiments are integrated
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's external scanorama_integrate function
+        logger.debug(
+            "Scanorama: key=%s, basis=%s, adjusted_basis=%s, knn=%s, sigma=%s, approx=%s",
+            key,
+            basis,
+            adjusted_basis,
+            knn,
+            sigma,
+            approx,
+        )
+
         sce.pp.scanorama_integrate(
             adata,
             key=key,
@@ -111,21 +122,29 @@ def scanorama(
             batch_size=batch_size,
         )
 
-        # Save the result
+        logger.info(
+            "Stored embedding in obsm['%s'] with shape %s",
+            adjusted_basis,
+            adata.obsm[adjusted_basis].shape,
+        )
+
         if decimals is not None:
             adata.obsm[adjusted_basis] = round_array(
                 adata.obsm[adjusted_basis], decimals
             )
         adata.write(output_file)
-        click.echo(f"Successfully ran Scanorama integration and saved to {output_file}")
+        logger.info(
+            "Successfully ran Scanorama integration and saved to %s", output_file
+        )
 
-        # Save embedding as pickle if specified
         if embedding_output:
             embedding = adata.obsm[adjusted_basis]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)
-            click.echo(f"Successfully saved Scanorama embedding to {embedding_output}")
+            logger.info(
+                "Successfully saved Scanorama embedding to %s", embedding_output
+            )
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

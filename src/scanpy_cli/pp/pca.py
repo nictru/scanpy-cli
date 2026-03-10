@@ -2,7 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_array, round_uns_dict
+from scanpy_cli.utils import decimals_option, round_array, round_uns_dict, logger
 
 
 @click.command()
@@ -119,10 +119,24 @@ def pca(
     - adata.uns['pca' | key_added]['variance']: Explained variance
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's pca function
+        logger.debug(
+            "PCA: n_comps=%s, svd_solver=%s, zero_center=%s, mask_var=%s, chunked=%s",
+            n_comps,
+            svd_solver,
+            zero_center,
+            mask_var,
+            chunked,
+        )
+        if layer:
+            logger.debug("Using layer '%s' as input for PCA", layer)
+        if chunked:
+            logger.debug("Using incremental PCA with chunk_size=%s", chunk_size)
+
         sc.pp.pca(
             adata,
             n_comps=n_comps,
@@ -138,25 +152,30 @@ def pca(
             key_added=key_added,
         )
 
-        # Save the result
+        uns_key = key_added if key_added else "pca"
+        variance_ratio = adata.uns[uns_key]["variance_ratio"]
+        logger.info(
+            "Cumulative variance explained by %d PCs: %.1f%%",
+            len(variance_ratio),
+            variance_ratio.sum() * 100,
+        )
+
         if decimals is not None:
             obsm_key = key_added if key_added else "X_pca"
             varm_key = key_added if key_added else "PCs"
-            uns_key = key_added if key_added else "pca"
             adata.obsm[obsm_key] = round_array(adata.obsm[obsm_key], decimals)
             adata.varm[varm_key] = round_array(adata.varm[varm_key], decimals)
             round_uns_dict(adata.uns[uns_key], decimals)
         adata.write(output_file)
-        click.echo(f"Successfully computed PCA and saved to {output_file}")
+        logger.info("Successfully computed PCA and saved to %s", output_file)
 
-        # Save embedding as pickle if specified
         if embedding_output:
             embedding_key = key_added if key_added else "X_pca"
             embedding = adata.obsm[embedding_key]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)
-            click.echo(f"Successfully saved PCA embedding to {embedding_output}")
+            logger.info("Successfully saved PCA embedding to %s", embedding_output)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

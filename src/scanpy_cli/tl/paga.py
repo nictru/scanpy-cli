@@ -1,7 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
-from scanpy_cli.utils import decimals_option, round_sparse
+from scanpy_cli.utils import decimals_option, round_sparse, logger
 
 
 @click.command()
@@ -65,10 +65,19 @@ def paga(
     - adata.uns['paga']['connectivities_tree']: Sparse matrix with tree connectivities
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's paga function
+        logger.debug(
+            "PAGA: groups=%s, model=%s, use_rna_velocity=%s, neighbors_key=%s",
+            groups,
+            model,
+            use_rna_velocity,
+            neighbors_key,
+        )
+
         sc.tl.paga(
             adata,
             groups=groups,
@@ -77,7 +86,9 @@ def paga(
             neighbors_key=neighbors_key,
         )
 
-        # Save the result
+        n_nodes = adata.uns["paga"]["connectivities"].shape[0]
+        logger.info("PAGA graph has %d nodes", n_nodes)
+
         if decimals is not None:
             paga = adata.uns["paga"]
             for key in ("connectivities", "connectivities_tree"):
@@ -85,7 +96,7 @@ def paga(
                     paga[key] = round_sparse(paga[key], decimals)
         adata.write(output_file)
 
-        click.echo(f"Successfully ran PAGA and saved to {output_file}")
+        logger.info("Successfully ran PAGA and saved to %s", output_file)
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

@@ -1,6 +1,21 @@
+import logging
+
 import numpy as np
 import scipy.sparse
 import rich_click as click
+from rich.logging import RichHandler
+
+
+logger = logging.getLogger("scanpy_cli")
+
+
+def setup_logging(level: int = logging.WARNING) -> None:
+    logging.basicConfig(
+        level=level,
+        format="%(message)s",
+        handlers=[RichHandler(show_path=False, show_time=False)],
+    )
+    logger.setLevel(level)
 
 
 def round_array(arr, decimals):

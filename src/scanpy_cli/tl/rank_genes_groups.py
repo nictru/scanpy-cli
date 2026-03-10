@@ -2,7 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
-from scanpy_cli.utils import decimals_option, round_uns_dict
+from scanpy_cli.utils import decimals_option, round_uns_dict, logger
 
 
 @click.command(name="rank-genes-groups")
@@ -125,10 +125,24 @@ def rank_genes_groups(
     - adata.uns['rank_genes_groups']['pts_rest']: Fraction of cells from the rest expressing the genes (if reference='rest')
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's rank_genes_groups function
+        logger.debug(
+            "rank_genes_groups: groupby=%s, method=%s, groups=%s, reference=%s, n_genes=%s",
+            groupby,
+            method,
+            groups,
+            reference,
+            n_genes,
+        )
+        if layer:
+            logger.debug("Using layer '%s' for differential expression", layer)
+        elif use_raw:
+            logger.debug("Using raw data for differential expression")
+
         sc.tl.rank_genes_groups(
             adata,
             groupby=groupby,
@@ -145,20 +159,22 @@ def rank_genes_groups(
             tie_correct=tie_correct,
         )
 
-        # Save the result
+        result_groups = list(adata.uns["rank_genes_groups"]["names"].dtype.names)
+        logger.info("Ranked genes for %d groups: %s", len(result_groups), result_groups)
+
         if decimals is not None:
             round_uns_dict(adata.uns["rank_genes_groups"], decimals)
         adata.write(output_file)
-        click.echo(f"Successfully ran rank_genes_groups and saved to {output_file}")
+        logger.info("Successfully ran rank_genes_groups and saved to %s", output_file)
 
-        # Save rank_genes_groups dictionary as pickle if specified
         if rank_genes_output:
             with open(rank_genes_output, "wb") as f:
                 pickle.dump(adata.uns["rank_genes_groups"], f)
-            click.echo(
-                f"Successfully saved rank_genes_groups dictionary to {rank_genes_output}"
+            logger.info(
+                "Successfully saved rank_genes_groups dictionary to %s",
+                rank_genes_output,
             )
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

@@ -3,7 +3,7 @@ import scanpy as sc
 import sys
 import numpy as np
 import pickle
-from scanpy_cli.utils import decimals_option, round_array
+from scanpy_cli.utils import decimals_option, round_array, logger
 
 
 @click.command()
@@ -132,10 +132,26 @@ def highly_variable_genes(
     - adata.var['highly_variable_intersection']: If batch_key is given, this denotes the genes that are highly variable in all batches
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's highly_variable_genes function
+        logger.debug(
+            "HVG: flavor=%s, n_top_genes=%s, batch_key=%s, layer=%s, subset=%s",
+            flavor,
+            n_top_genes,
+            batch_key,
+            layer,
+            subset,
+        )
+        if batch_key:
+            logger.debug(
+                "Running per-batch HVG selection with batch key '%s'", batch_key
+            )
+        if layer:
+            logger.debug("Using layer '%s' for variance estimation", layer)
+
         sc.pp.highly_variable_genes(
             adata,
             n_top_genes=n_top_genes,
@@ -153,7 +169,11 @@ def highly_variable_genes(
             check_values=check_values,
         )
 
-        # Save the result
+        n_hvg = int(adata.var["highly_variable"].sum())
+        logger.info("Found %d / %d highly variable genes", n_hvg, adata.n_vars)
+        if subset:
+            logger.info("Subsetted to %d HVGs in-place", adata.n_vars)
+
         if decimals is not None:
             float_cols = [
                 "means",
@@ -167,18 +187,17 @@ def highly_variable_genes(
                     adata.var[col] = round_array(adata.var[col].to_numpy(), decimals)
         adata.write(output_file)
 
-        # Save highly variable genes information as pickle if specified
         if hvg_output:
             hvg_info = adata.var[["highly_variable"]]
             with open(hvg_output, "wb") as f:
                 pickle.dump(hvg_info, f)
-            click.echo(
-                f"Successfully saved highly variable genes information to {hvg_output}"
+            logger.info(
+                "Successfully saved highly variable genes information to %s", hvg_output
             )
 
-        click.echo(
-            f"Successfully detected highly variable genes and saved to {output_file}"
+        logger.info(
+            "Successfully detected highly variable genes and saved to %s", output_file
         )
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

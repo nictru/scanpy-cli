@@ -12,6 +12,7 @@ dependencies = [
     "harmonypy>=0.0.10",
     "igraph>=0.11.8",
     "leidenalg>=0.10.2",
+    "rich>=13.0.0",
     "rich-click>=1.8.8",
     "scanorama>=1.7.4",
     "scanpy>=1.12.0",

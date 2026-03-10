@@ -2,6 +2,7 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -112,10 +113,11 @@ def leiden(
     - adata.uns[key_added]['params']: Parameters used
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Process restrict_to parameter
         restrict_to = None
         if restrict_to_key and restrict_to_categories:
             categories_list = restrict_to_categories.split(",")
@@ -125,7 +127,18 @@ def leiden(
                 "restrict-to-key and restrict-to-categories must be provided together"
             )
 
-        # Call scanpy's leiden function
+        logger.debug(
+            "Leiden: resolution=%s, flavor=%s, key_added=%s, n_iterations=%s",
+            resolution,
+            flavor,
+            key_added,
+            n_iterations,
+        )
+        if neighbors_key:
+            logger.debug("Using neighbors stored under key '%s'", neighbors_key)
+        if obsp:
+            logger.debug("Using adjacency from obsp['%s']", obsp)
+
         sc.tl.leiden(
             adata,
             resolution=resolution,
@@ -140,19 +153,22 @@ def leiden(
             restrict_to=restrict_to,
         )
 
-        # Save the result
+        n_clusters = adata.obs[key_added].nunique()
+        logger.info("Found %d clusters (key='%s')", n_clusters, key_added)
+
         adata.write(output_file)
-        click.echo(
-            f"Successfully computed Leiden clustering with resolution {resolution} and saved to {output_file}"
+        logger.info(
+            "Successfully computed Leiden clustering with resolution %s and saved to %s",
+            resolution,
+            output_file,
         )
 
-        # Save cluster assignments as pickle if specified
         if clusters_output:
             clusters = adata.obs[[key_added]]
             with open(clusters_output, "wb") as f:
                 pickle.dump(clusters, f)
-            click.echo(f"Successfully saved cluster assignments to {clusters_output}")
+            logger.info("Successfully saved cluster assignments to %s", clusters_output)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

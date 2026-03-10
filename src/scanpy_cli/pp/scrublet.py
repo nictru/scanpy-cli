@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -168,10 +169,30 @@ def scrublet(
     - adata.uns['scrublet']['parameters']: Dictionary of Scrublet parameters
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's scrublet function
+        logger.debug(
+            "Scrublet: expected_doublet_rate=%s, sim_doublet_ratio=%s, n_prin_comps=%s, "
+            "knn_dist_metric=%s, threshold=%s, batch_key=%s",
+            expected_doublet_rate,
+            sim_doublet_ratio,
+            n_prin_comps,
+            knn_dist_metric,
+            threshold,
+            batch_key,
+        )
+        if batch_key:
+            logger.debug(
+                "Running Scrublet with batch correction on key '%s'", batch_key
+            )
+        if threshold is not None:
+            logger.debug("Using manual doublet score threshold: %s", threshold)
+        else:
+            logger.debug("Doublet score threshold will be auto-detected")
+
         sc.pp.scrublet(
             adata,
             expected_doublet_rate=expected_doublet_rate,
@@ -191,13 +212,24 @@ def scrublet(
             random_state=random_state,
         )
 
-        # Save the result
-        adata.write(output_file)
-        click.echo(
-            f"Successfully ran Scrublet doublet detection and saved to {output_file}"
+        n_doublets = int(adata.obs["predicted_doublet"].sum())
+        pct = n_doublets / adata.n_obs * 100
+        logger.info(
+            "Predicted %d doublets (%.1f%%) out of %d cells",
+            n_doublets,
+            pct,
+            adata.n_obs,
+        )
+        logger.debug(
+            "Doublet score threshold used: %s",
+            adata.uns.get("scrublet", {}).get("threshold"),
         )
 
-        # Save doublet predictions and scores as pickle if specified
+        adata.write(output_file)
+        logger.info(
+            "Successfully ran Scrublet doublet detection and saved to %s", output_file
+        )
+
         if doublet_output:
             doublet_df = adata.obs[["predicted_doublet", "doublet_score"]].copy()
             doublet_df.columns = [
@@ -205,10 +237,11 @@ def scrublet(
                 "scrublet_doublet_score",
             ]
             doublet_df.to_pickle(doublet_output)
-            click.echo(
-                f"Successfully saved doublet predictions and scores to {doublet_output}"
+            logger.info(
+                "Successfully saved doublet predictions and scores to %s",
+                doublet_output,
             )
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

@@ -1,6 +1,8 @@
 import rich_click as click
 import scanpy as sc
 import os
+import sys
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -31,14 +33,24 @@ def read_10x_h5(input, output, genome, gex_only, backup_url):
     INPUT is the path to the input .h5 file.
     OUTPUT is the path where the AnnData object will be saved (.h5ad format).
     """
-    # Read the data
-    adata = sc.read_10x_h5(
-        input, genome=genome, gex_only=gex_only, backup_url=backup_url
-    )
+    try:
+        logger.debug(
+            "Reading 10x H5 file: %s (genome=%s, gex_only=%s)", input, genome, gex_only
+        )
+        if backup_url:
+            logger.debug("Backup URL configured: %s", backup_url)
 
-    # Ensure the output directory exists
-    os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+        adata = sc.read_10x_h5(
+            input, genome=genome, gex_only=gex_only, backup_url=backup_url
+        )
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input
+        )
 
-    # Save the AnnData object
-    adata.write(output)
-    click.echo(f"Data successfully saved to {output}")
+        os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+
+        adata.write(output)
+        logger.info("Data successfully saved to %s", output)
+    except Exception as e:
+        logger.error(str(e))
+        sys.exit(1)

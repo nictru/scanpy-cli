@@ -199,7 +199,7 @@ def test_scanorama_error_handling(contiguous_batch_h5ad_path, temp_h5ad_file):
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 1, "Scanorama should fail with invalid key"
-    assert "Error" in result.stderr, "Error message not found in stderr"
+    assert "ERROR" in result.stdout, "Error message not found in output"
 
     # Test with invalid basis
     cmd = [
@@ -220,4 +220,4 @@ def test_scanorama_error_handling(contiguous_batch_h5ad_path, temp_h5ad_file):
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 1, "Scanorama should fail with invalid basis"
-    assert "Error" in result.stderr, "Error message not found in stderr"
+    assert "ERROR" in result.stdout, "Error message not found in output"

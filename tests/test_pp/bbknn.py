@@ -159,7 +159,7 @@ def test_bbknn_error_handling(batch_h5ad_path, temp_h5ad_file):
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 1, "BBKNN should fail with invalid batch key"
-    assert "Error" in result.stderr, "Error message not found in stderr"
+    assert "ERROR" in result.stdout, "Error message not found in output"
 
     # Test with invalid use_rep
     cmd = [
@@ -176,7 +176,7 @@ def test_bbknn_error_handling(batch_h5ad_path, temp_h5ad_file):
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 1, "BBKNN should fail with invalid use_rep"
-    assert "Error" in result.stderr, "Error message not found in stderr"
+    assert "ERROR" in result.stdout, "Error message not found in output"
 
 
 def test_bbknn_trim(batch_h5ad_path, temp_h5ad_file):

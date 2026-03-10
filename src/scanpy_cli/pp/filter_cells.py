@@ -1,6 +1,7 @@
 import rich_click as click
 import scanpy as sc
 import sys
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -45,10 +46,20 @@ def filter_cells(min_counts, min_genes, max_counts, max_genes, input_file, outpu
     Only provide one of the optional parameters min_counts, min_genes, max_counts, max_genes per call.
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Call scanpy's filter_cells function
+        n_obs_before = adata.n_obs
+        logger.debug(
+            "Filtering cells: min_counts=%s, min_genes=%s, max_counts=%s, max_genes=%s",
+            min_counts,
+            min_genes,
+            max_counts,
+            max_genes,
+        )
+
         sc.pp.filter_cells(
             adata,
             min_counts=min_counts,
@@ -57,10 +68,10 @@ def filter_cells(min_counts, min_genes, max_counts, max_genes, input_file, outpu
             max_genes=max_genes,
         )
 
-        # Save the result
-        adata.write(output_file)
+        logger.info("Retained %d / %d cells after filtering", adata.n_obs, n_obs_before)
 
-        click.echo(f"Successfully filtered cells and saved to {output_file}")
+        adata.write(output_file)
+        logger.info("Successfully filtered cells and saved to %s", output_file)
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)

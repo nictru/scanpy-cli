@@ -3,6 +3,7 @@ import scanpy as sc
 import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
+from scanpy_cli.utils import logger
 
 
 @click.command()
@@ -216,10 +217,11 @@ def umap(
     The UMAP embeddings need to be computed first using the 'scanpy-cli tl umap' command.
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
+        logger.info(
+            "Loaded %d cells × %d genes from %s", adata.n_obs, adata.n_vars, input_file
+        )
 
-        # Process dimensions
         try:
             dimensions = [int(x) for x in dimensions.split(",")]
         except ValueError:
@@ -227,7 +229,6 @@ def umap(
                 "--dimensions should be comma-separated integers, e.g., '0,1'"
             )
 
-        # Process outline colors
         if outline_color:
             try:
                 outline_color = tuple(outline_color.split(","))
@@ -238,7 +239,6 @@ def umap(
                     "--outline-color should be two comma-separated colors, e.g., 'black,white'"
                 )
 
-        # Process outline width
         if outline_width:
             try:
                 outline_width = tuple(float(x) for x in outline_width.split(","))
@@ -249,7 +249,6 @@ def umap(
                     "--outline-width should be two comma-separated floats, e.g., '0.3,0.05'"
                 )
 
-        # Process figsize
         if figsize:
             try:
                 figsize = tuple(float(x) for x in figsize.split(","))
@@ -260,10 +259,16 @@ def umap(
                     "--figsize should be two comma-separated floats, e.g., '6,4'"
                 )
 
-        # Set up figure parameters
+        logger.debug(
+            "UMAP plot: color=%s, projection=%s, dimensions=%s, dpi=%s",
+            color,
+            projection,
+            dimensions,
+            dpi,
+        )
+
         sc.settings.set_figure_params(dpi=dpi, figsize=figsize)
 
-        # Call scanpy's umap plotting function
         sc.pl.umap(
             adata,
             color=color if color else None,
@@ -298,16 +303,14 @@ def umap(
             return_fig=True,
         )
 
-        # Ensure output directory exists
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Save the figure
         plt.savefig(output_file, dpi=dpi, bbox_inches="tight")
         plt.close()
 
-        click.echo(f"Successfully created UMAP plot and saved to {output_file}")
+        logger.info("Successfully created UMAP plot and saved to %s", output_file)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        logger.error(str(e))
         sys.exit(1)
