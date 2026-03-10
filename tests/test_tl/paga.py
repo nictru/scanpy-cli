@@ -1,8 +1,36 @@
+import scipy.sparse
 import scanpy as sc
 import subprocess
+import numpy as np
 
 
-def test_paga_runs(test_h5ad_path, temp_h5ad_file):
+def test_paga_decimals(test_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the PAGA sparse matrices to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "tl",
+        "paga",
+        "--input-file",
+        str(test_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--neighbors-key",
+        "neighbors",
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"PAGA command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    for key in ("connectivities", "connectivities_tree"):
+        mat = adata.uns["paga"][key]
+        if scipy.sparse.issparse(mat) and mat.data.size > 0:
+            assert np.all(mat.data == np.round(mat.data, 3)), (
+                f"paga['{key}'] values are not rounded to 3 decimal places"
+            )
     """Test that the paga command runs successfully."""
     cmd = [
         "scanpy-cli",

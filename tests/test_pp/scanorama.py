@@ -146,6 +146,38 @@ def test_scanorama_pickle_output(contiguous_batch_h5ad_path, temp_h5ad_file, tmp
     )
 
 
+def test_scanorama_decimals(contiguous_batch_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the Scanorama output to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "pp",
+        "scanorama",
+        "--input-file",
+        str(contiguous_batch_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--key",
+        "batch",
+        "--basis",
+        "X_pca",
+        "--adjusted-basis",
+        "X_scanorama",
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"Scanorama command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    embedding = np.array(adata.obsm["X_scanorama"])
+
+    assert np.all(embedding == np.round(embedding, 3)), (
+        "X_scanorama values are not rounded to 3 decimal places"
+    )
+
+
 def test_scanorama_error_handling(contiguous_batch_h5ad_path, temp_h5ad_file):
     """Test Scanorama error handling with invalid parameters."""
     # Test with invalid key

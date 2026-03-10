@@ -105,6 +105,35 @@ def test_hvg_with_batch(batch_h5ad_path, temp_h5ad_file):
     assert "dispersions" in adata.var, "Gene dispersions not found in var"
 
 
+def test_hvg_decimals(batch_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the HVG float var columns to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "pp",
+        "highly-variable-genes",
+        "--input-file",
+        str(batch_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, (
+        f"Highly variable genes command failed: {result.stderr}"
+    )
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    for col in ("means", "dispersions", "dispersions_norm"):
+        if col in adata.var.columns:
+            vals = adata.var[col].to_numpy()
+            assert np.all(vals == np.round(vals, 3)), (
+                f"var['{col}'] values are not rounded to 3 decimal places"
+            )
+
+
 def test_hvg_pickle_output(batch_h5ad_path, temp_h5ad_file, tmp_path):
     """Test that the highly-variable-genes command saves the highly variable genes information as a pickle file when requested."""
     # Create a temporary pickle file path

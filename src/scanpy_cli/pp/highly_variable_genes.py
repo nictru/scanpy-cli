@@ -3,9 +3,11 @@ import scanpy as sc
 import sys
 import numpy as np
 import pickle
+from scanpy_cli.utils import decimals_option, round_array
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--n-top-genes",
     type=int,
@@ -112,6 +114,7 @@ def highly_variable_genes(
     input_file,
     output_file,
     hvg_output,
+    decimals,
 ):
     """Annotate highly variable genes [Satija et al., 2015, Stuart et al., 2019, Zheng et al., 2017].
 
@@ -151,6 +154,17 @@ def highly_variable_genes(
         )
 
         # Save the result
+        if decimals is not None:
+            float_cols = [
+                "means",
+                "dispersions",
+                "dispersions_norm",
+                "variances",
+                "variances_norm",
+            ]
+            for col in float_cols:
+                if col in adata.var.columns:
+                    adata.var[col] = round_array(adata.var[col].to_numpy(), decimals)
         adata.write(output_file)
 
         # Save highly variable genes information as pickle if specified

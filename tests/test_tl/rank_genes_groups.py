@@ -34,6 +34,38 @@ def test_rank_genes_groups_runs(test_h5ad_path, temp_h5ad_file):
     )
 
 
+def test_rank_genes_groups_decimals(test_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds float arrays in rank_genes_groups to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "tl",
+        "rank-genes-groups",
+        "--input-file",
+        str(test_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--groupby",
+        "louvain",
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"Rank genes groups command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    rgg = adata.uns["rank_genes_groups"]
+    for key in ("scores", "pvals", "pvals_adj"):
+        if key in rgg:
+            rec = rgg[key]
+            for field in rec.dtype.names:
+                vals = rec[field]
+                assert np.all(vals == np.round(vals, 3)), (
+                    f"rank_genes_groups['{key}']['{field}'] values are not rounded to 3 decimal places"
+                )
+
+
 def test_rank_genes_groups_pickle_output(test_h5ad_path, temp_h5ad_file, tmp_path):
     """Test that the rank_genes_groups command saves the dictionary as a pickle file when requested."""
     # Create a temporary pickle file path

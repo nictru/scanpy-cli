@@ -32,6 +32,36 @@ def test_pca_runs(test_h5ad_path, temp_h5ad_file):
     assert "pca" in adata.uns, "PCA parameters not found in uns"
 
 
+def test_pca_decimals(test_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the PCA output to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "pp",
+        "pca",
+        "--input-file",
+        str(test_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"PCA command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    embedding = np.array(adata.obsm["X_pca"])
+    loadings = np.array(adata.varm["PCs"])
+
+    assert np.all(embedding == np.round(embedding, 3)), (
+        "X_pca values are not rounded to 3 decimal places"
+    )
+    assert np.all(loadings == np.round(loadings, 3)), (
+        "PCs values are not rounded to 3 decimal places"
+    )
+
+
 def test_pca_pickle_output(test_h5ad_path, temp_h5ad_file, tmp_path):
     """Test that the pca command saves the embedding as a pickle file when requested."""
     # Create a temporary pickle file path

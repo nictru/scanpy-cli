@@ -1,5 +1,7 @@
+import scipy.sparse
 import scanpy as sc
 import subprocess
+import numpy as np
 
 
 def test_bbknn_runs(batch_h5ad_path, temp_h5ad_file):
@@ -104,6 +106,40 @@ def test_bbknn_pynndescent(batch_h5ad_path, temp_h5ad_file):
     assert "connectivities" in adata.obsp, "BBKNN connectivities not found in obsp"
     assert "distances" in adata.obsp, "BBKNN distances not found in obsp"
     assert "neighbors" in adata.uns, "BBKNN neighbors not found in uns"
+
+
+def test_bbknn_decimals(batch_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the BBKNN output to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "pp",
+        "bbknn",
+        "--input-file",
+        str(batch_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--batch-key",
+        "batch",
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"BBKNN command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    conn = adata.obsp["connectivities"]
+    dist = adata.obsp["distances"]
+
+    assert scipy.sparse.issparse(conn), "connectivities should be sparse"
+    assert scipy.sparse.issparse(dist), "distances should be sparse"
+    assert np.all(conn.data == np.round(conn.data, 3)), (
+        "connectivities values are not rounded to 3 decimal places"
+    )
+    assert np.all(dist.data == np.round(dist.data, 3)), (
+        "distances values are not rounded to 3 decimal places"
+    )
 
 
 def test_bbknn_error_handling(batch_h5ad_path, temp_h5ad_file):

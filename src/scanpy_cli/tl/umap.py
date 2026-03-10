@@ -2,9 +2,11 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
+from scanpy_cli.utils import decimals_option, round_array
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--min-dist",
     type=float,
@@ -120,6 +122,7 @@ def umap(
     input_file,
     output_file,
     embedding_output,
+    decimals,
 ):
     """Embed the neighborhood graph using UMAP [McInnes et al., 2018].
 
@@ -157,12 +160,14 @@ def umap(
         )
 
         # Save the result
+        embedding_key = key_added if key_added else "X_umap"
+        if decimals is not None:
+            adata.obsm[embedding_key] = round_array(adata.obsm[embedding_key], decimals)
         adata.write(output_file)
         click.echo(f"Successfully computed UMAP embedding and saved to {output_file}")
 
         # Save embedding as pickle if specified
         if embedding_output:
-            embedding_key = key_added if key_added else "X_umap"
             embedding = adata.obsm[embedding_key]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)

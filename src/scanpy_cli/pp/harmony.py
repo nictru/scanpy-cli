@@ -4,9 +4,11 @@ import sys
 import pickle
 import numpy as np
 import harmonypy
+from scanpy_cli.utils import decimals_option, round_array
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--key",
     type=str,
@@ -62,6 +64,7 @@ def harmony(
     input_file,
     output_file,
     embedding_output,
+    decimals,
 ):
     """Run Harmony batch correction [Korsunsky et al., 2019].
 
@@ -88,6 +91,9 @@ def harmony(
             x, adata.obs, key, random_state=random_state, device="cpu", **kwargs
         )
         adata.obsm[out_key] = harmony_out.Z_corr
+
+        if decimals is not None:
+            adata.obsm[out_key] = round_array(adata.obsm[out_key], decimals)
 
         adata.write(output_file)
         click.echo(f"Successfully ran Harmony integration and saved to {output_file}")

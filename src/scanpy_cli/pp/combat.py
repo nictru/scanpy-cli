@@ -2,9 +2,11 @@ import rich_click as click
 import scanpy as sc
 import sys
 import numpy as np
+from scanpy_cli.utils import decimals_option, round_array
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--key",
     type=str,
@@ -53,6 +55,7 @@ def combat(
     input_file,
     output_file,
     corrected_output,
+    decimals,
 ):
     """Run ComBat batch correction [Johnson et al., 2006, Leek et al., 2017, Pedersen, 2012].
 
@@ -99,6 +102,14 @@ def combat(
             adata.layers[out_layer] = corrected
             if in_layer != "X":
                 adata.X = original_x
+
+        if decimals is not None:
+            if out_layer == "X":
+                adata.X = round_array(np.asarray(adata.X), decimals)
+            else:
+                adata.layers[out_layer] = round_array(
+                    np.asarray(adata.layers[out_layer]), decimals
+                )
 
         # Save the result
         adata.write(output_file)

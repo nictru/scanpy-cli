@@ -2,9 +2,11 @@ import rich_click as click
 import scanpy as sc
 import scanpy.external as sce
 import sys
+from scanpy_cli.utils import decimals_option, round_sparse
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--batch-key",
     type=str,
@@ -114,6 +116,7 @@ def bbknn(
     local_connectivity,
     input_file,
     output_file,
+    decimals,
 ):
     """Run BBKNN batch correction [Polański et al., 2019].
 
@@ -151,6 +154,11 @@ def bbknn(
         )
 
         # Save the result
+        if decimals is not None:
+            adata.obsp["connectivities"] = round_sparse(
+                adata.obsp["connectivities"], decimals
+            )
+            adata.obsp["distances"] = round_sparse(adata.obsp["distances"], decimals)
         adata.write(output_file)
         click.echo(f"Successfully ran BBKNN integration and saved to {output_file}")
 

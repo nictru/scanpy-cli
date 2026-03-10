@@ -2,9 +2,11 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
+from scanpy_cli.utils import decimals_option, round_uns_dict
 
 
 @click.command(name="rank-genes-groups")
+@decimals_option
 @click.option(
     "--groupby",
     type=str,
@@ -106,6 +108,7 @@ def rank_genes_groups(
     input_file,
     output_file,
     rank_genes_output,
+    decimals,
 ):
     """Rank genes for characterizing groups.
 
@@ -143,6 +146,8 @@ def rank_genes_groups(
         )
 
         # Save the result
+        if decimals is not None:
+            round_uns_dict(adata.uns["rank_genes_groups"], decimals)
         adata.write(output_file)
         click.echo(f"Successfully ran rank_genes_groups and saved to {output_file}")
 

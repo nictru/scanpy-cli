@@ -1,9 +1,11 @@
 import rich_click as click
 import scanpy as sc
 import sys
+from scanpy_cli.utils import decimals_option, round_sparse
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--n-neighbors",
     "-n",
@@ -101,6 +103,7 @@ def neighbors(
     key_added,
     input_file,
     output_file,
+    decimals,
 ):
     """Compute a neighborhood graph of observations [McInnes et al., 2018].
 
@@ -130,6 +133,11 @@ def neighbors(
         )
 
         # Save the result
+        conn_key = f"{key_added}_connectivities" if key_added else "connectivities"
+        dist_key = f"{key_added}_distances" if key_added else "distances"
+        if decimals is not None:
+            adata.obsp[conn_key] = round_sparse(adata.obsp[conn_key], decimals)
+            adata.obsp[dist_key] = round_sparse(adata.obsp[dist_key], decimals)
         adata.write(output_file)
 
         click.echo(f"Successfully computed neighbors and saved to {output_file}")

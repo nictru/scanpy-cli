@@ -55,6 +55,32 @@ def test_umap_runs(processed_h5ad_path, temp_h5ad_file):
     input_path.unlink()
 
 
+def test_umap_decimals(processed_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the UMAP output to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "tl",
+        "umap",
+        "--input-file",
+        str(processed_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"UMAP command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    embedding = np.array(adata.obsm["X_umap"])
+
+    assert np.all(embedding == np.round(embedding, 3)), (
+        "X_umap values are not rounded to 3 decimal places"
+    )
+
+
 def test_umap_pickle_output(processed_h5ad_path, temp_h5ad_file, tmp_path):
     """Test that the umap command saves the UMAP embedding as a pickle file when requested."""
     # Create a temporary pickle file path

@@ -2,9 +2,11 @@ import rich_click as click
 import scanpy as sc
 import sys
 import pickle
+from scanpy_cli.utils import decimals_option, round_array, round_uns_dict
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--n-comps",
     type=int,
@@ -103,6 +105,7 @@ def pca(
     input_file,
     output_file,
     embedding_output,
+    decimals,
 ):
     """Principal component analysis [Pedregosa et al., 2011].
 
@@ -136,6 +139,13 @@ def pca(
         )
 
         # Save the result
+        if decimals is not None:
+            obsm_key = key_added if key_added else "X_pca"
+            varm_key = key_added if key_added else "PCs"
+            uns_key = key_added if key_added else "pca"
+            adata.obsm[obsm_key] = round_array(adata.obsm[obsm_key], decimals)
+            adata.varm[varm_key] = round_array(adata.varm[varm_key], decimals)
+            round_uns_dict(adata.uns[uns_key], decimals)
         adata.write(output_file)
         click.echo(f"Successfully computed PCA and saved to {output_file}")
 

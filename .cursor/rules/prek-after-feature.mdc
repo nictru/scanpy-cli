@@ -1,0 +1,14 @@
+---
+description: Run prek (pre-commit) after completing a feature and fix any issues
+alwaysApply: true
+---
+
+# Run prek After Every Feature
+
+After completing any feature implementation, always run:
+
+```bash
+uv run prek run --all-files
+```
+
+If the command fails, fix all reported issues (linting, formatting, type errors, test failures) and re-run until it passes before considering the task done.

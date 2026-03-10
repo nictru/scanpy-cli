@@ -34,6 +34,32 @@ def test_combat_basic(batch_h5ad_path, temp_h5ad_file):
     assert adata_corrected.X is not None, "Data matrix is None after correction"
 
 
+def test_combat_decimals(batch_h5ad_path, temp_h5ad_file):
+    """Test that --decimals rounds the ComBat output to the specified number of decimal places."""
+    cmd = [
+        "scanpy-cli",
+        "pp",
+        "combat",
+        "--input-file",
+        str(batch_h5ad_path),
+        "--output-file",
+        str(temp_h5ad_file),
+        "--key",
+        "batch",
+        "--decimals",
+        "3",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"ComBat command failed: {result.stderr}"
+
+    adata = sc.read_h5ad(temp_h5ad_file)
+    x = np.array(adata.X)
+
+    assert np.all(x == np.round(x, 3)), "X values are not rounded to 3 decimal places"
+
+
 def test_combat_with_covariates(batch_h5ad_path, temp_h5ad_file):
     """Test that the combat command runs successfully with covariates."""
     with tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False) as tmp:

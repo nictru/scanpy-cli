@@ -3,9 +3,11 @@ import scanpy as sc
 import scanpy.external as sce
 import sys
 import pickle
+from scanpy_cli.utils import decimals_option, round_array
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--key",
     type=str,
@@ -82,6 +84,7 @@ def scanorama(
     input_file,
     output_file,
     embedding_output,
+    decimals,
 ):
     """Run Scanorama integration [Hie et al., 2019].
 
@@ -109,6 +112,10 @@ def scanorama(
         )
 
         # Save the result
+        if decimals is not None:
+            adata.obsm[adjusted_basis] = round_array(
+                adata.obsm[adjusted_basis], decimals
+            )
         adata.write(output_file)
         click.echo(f"Successfully ran Scanorama integration and saved to {output_file}")
 

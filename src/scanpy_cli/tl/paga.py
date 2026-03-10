@@ -1,9 +1,11 @@
 import rich_click as click
 import scanpy as sc
 import sys
+from scanpy_cli.utils import decimals_option, round_sparse
 
 
 @click.command()
+@decimals_option
 @click.option(
     "--groups",
     type=str,
@@ -46,6 +48,7 @@ def paga(
     neighbors_key,
     input_file,
     output_file,
+    decimals,
 ):
     """Run PAGA (Partition-based Graph Abstraction) [Wolf et al., 2019].
 
@@ -75,6 +78,11 @@ def paga(
         )
 
         # Save the result
+        if decimals is not None:
+            paga = adata.uns["paga"]
+            for key in ("connectivities", "connectivities_tree"):
+                if key in paga:
+                    paga[key] = round_sparse(paga[key], decimals)
         adata.write(output_file)
 
         click.echo(f"Successfully ran PAGA and saved to {output_file}")
