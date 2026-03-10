@@ -1,4 +1,5 @@
 import os
+import anndata
 import pytest
 import tempfile
 import scanpy as sc
@@ -9,26 +10,21 @@ from pathlib import Path
 # Add the src directory to the path so we can import the package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+anndata.settings.allow_write_nullable_strings = True
+
 
 @pytest.fixture(scope="session")
 def test_data_dir():
-    """Return the directory with test data."""
+    """Return the directory with static test data (e.g. committed 10x files)."""
     return Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="session")
-def test_h5ad_path(test_data_dir):
-    """Return the path to the test h5ad file."""
-    path = test_data_dir / "test.h5ad"
-    if not path.exists():
-        # Create the test data directory if it doesn't exist
-        test_data_dir.mkdir(exist_ok=True, parents=True)
-
-        # If the test.h5ad file doesn't exist, create a small test AnnData object
-        adata = sc.datasets.pbmc3k_processed()
-        # Save the test data
-        adata.write_h5ad(path)
-
+def test_h5ad_path(tmp_path_factory):
+    """Return the path to the generated test h5ad file (per-worker temp copy)."""
+    path = tmp_path_factory.mktemp("data") / "test.h5ad"
+    adata = sc.datasets.pbmc3k_processed()
+    adata.write_h5ad(path)
     return path
 
 

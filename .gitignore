@@ -12,3 +12,5 @@ wheels/
 # Testing
 .pytest_cache/
 .coverage*
+tests/data/test.h5ad
+tests/data/*.lock

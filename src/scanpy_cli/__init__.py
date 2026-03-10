@@ -1,9 +1,12 @@
+import anndata
 import rich_click as click
 import importlib.metadata
 from scanpy_cli.pp import pp
 from scanpy_cli.tl import tl
 from scanpy_cli.pl import pl
 from scanpy_cli.io import io
+
+anndata.settings.allow_write_nullable_strings = True
 
 
 @click.group()

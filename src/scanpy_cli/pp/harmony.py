@@ -1,8 +1,9 @@
 import rich_click as click
 import scanpy as sc
-import scanpy.external as sce
 import sys
 import pickle
+import numpy as np
+import harmonypy
 
 
 @click.command()
@@ -21,6 +22,7 @@ import pickle
 @click.option(
     "--adjusted-basis",
     type=str,
+    default=None,
     help="Key in adata.obsm to store the harmonized embedding.",
 )
 @click.option(
@@ -71,27 +73,27 @@ def harmony(
     - adata.obsm['{basis}_harmony' | adjusted_basis]: Harmonized embedding
     """
     try:
-        # Load the AnnData object
         adata = sc.read_h5ad(input_file)
 
-        # Call scanpy's external harmony_integrate function
-        sce.pp.harmony_integrate(
-            adata,
-            key=key,
-            basis=basis,
-            adjusted_basis=adjusted_basis,
-            theta=theta,
-            random_state=random_state,
-        )
+        out_key = adjusted_basis if adjusted_basis is not None else f"{basis}_harmony"
 
-        # Save the result
+        kwargs = {}
+        if theta is not None:
+            kwargs["theta"] = theta
+
+        # Call harmonypy directly to avoid scanpy wrapper's transpose mismatch
+        # with harmonypy >= 0.2.0 (Z_corr already returns (N, d), no extra .T needed)
+        x = adata.obsm[basis].astype(np.float64)
+        harmony_out = harmonypy.run_harmony(
+            x, adata.obs, key, random_state=random_state, device="cpu", **kwargs
+        )
+        adata.obsm[out_key] = harmony_out.Z_corr
+
         adata.write(output_file)
         click.echo(f"Successfully ran Harmony integration and saved to {output_file}")
 
-        # Save embedding as pickle if specified
         if embedding_output:
-            embedding_key = adjusted_basis if adjusted_basis else f"{basis}_harmony"
-            embedding = adata.obsm[embedding_key]
+            embedding = adata.obsm[out_key]
             with open(embedding_output, "wb") as f:
                 pickle.dump(embedding, f)
             click.echo(f"Successfully saved harmonized embedding to {embedding_output}")
